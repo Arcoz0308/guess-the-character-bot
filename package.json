@@ -17,7 +17,8 @@
     "@prisma/client": "^7.1.0",
     "arcscord": "0.3.0-beta-8",
     "discord.js": "^14.16.3",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "prisma": "^7.1.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.11.0",
@@ -27,7 +28,6 @@
     "dotenv": "^16.4.5",
     "eslint": "^9.17.0",
     "nodemon": "^3.1.7",
-    "prisma": "^7.1.0",
     "tsc-alias": "^1.8.10",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.2"
