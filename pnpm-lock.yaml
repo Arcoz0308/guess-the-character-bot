@@ -6,10 +6,10 @@ settings:
 
 dependencies:
   '@prisma/adapter-pg':
-    specifier: ^7.1.0
+    specifier: ^7.2.0
     version: 7.2.0
   '@prisma/client':
-    specifier: ^7.1.0
+    specifier: ^7.2.0
     version: 7.2.0(prisma@7.2.0)(typescript@5.9.3)
   arcscord:
     specifier: 0.3.0-beta-8

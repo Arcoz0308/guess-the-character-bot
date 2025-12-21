@@ -6,15 +6,15 @@
     "node": ">=23.0.0"
   },
   "scripts": {
-    "start": "npx prisma generate & node -r @swc-node/register -r tsconfig-paths/register src/index.ts",
+    "start": "npx prisma generate && node -r @swc-node/register -r tsconfig-paths/register src/index.ts",
     "dev": "npx nodemon --exec node -r @swc-node/register -r tsconfig-paths/register src/index.ts dev debug",
     "lint": "eslint .",
     "lint:fix": "eslint --fix ."
   },
   "postinstall": "npx prisma generate",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.1.0",
-    "@prisma/client": "^7.1.0",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
     "arcscord": "0.3.0-beta-8",
     "discord.js": "^14.16.3",
     "pg": "^8.16.3",
