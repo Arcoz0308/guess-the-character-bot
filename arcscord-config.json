@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "packageManager": {
+    "type": "pnpm"
+  },
+  "options": [
+    "eslint"
+  ],
+  "basePaths": {
+    "root": "./src",
+    "commands": "./commands",
+    "events": "./events",
+    "components": "./components",
+    "tasks": "./tasks",
+    "handlerList": "./src/_handlers.ts"
+  }
+}

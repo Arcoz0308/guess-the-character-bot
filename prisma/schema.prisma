@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Guild {
+  id               String            @id
+  name             String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  organist         Boolean           @default(false)
+  sendMessages     Boolean           @default(true)
+  sendReactions    Boolean           @default(true)
+  channelId        String
+  pingRoleId       String
+  webhookUrl       String            @default("")
+  originalMessages OriginalMessage[]
+  sendedMessages   SendedMessage[]
+}
+
+model OriginalMessage {
+  id             String
+  channelId      String
+  content        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  guildId        String
+  guild          Guild           @relation(fields: [guildId], references: [id])
+  sendedMessages SendedMessage[]
+
+  @@id([id, channelId])
+}
+
+model SendedMessage {
+  id                       String
+  guildId                  String
+  channelId                String
+  guild                    Guild           @relation(fields: [guildId], references: [id])
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  originalMessageId        String
+  originalMessageChannelId String
+  originalMessage          OriginalMessage @relation(fields: [originalMessageId, originalMessageChannelId], references: [id, channelId])
+  bot                      Boolean         @default(false)
+
+  @@id([id, guildId])
+}
