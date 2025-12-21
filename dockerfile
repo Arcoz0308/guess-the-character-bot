@@ -1,4 +1,4 @@
-FROM node:23
+FROM node:22.21.1
 
 # Install pnpm globally
 RUN corepack enable && corepack prepare pnpm@latest --activate
