@@ -2,6 +2,9 @@
   "name": "guess-the-character-bot",
   "version": "1.0.0",
   "description": "A discord bot made with arcscord",
+  "engines": {
+    "node": ">=23.0.0"
+  },
   "scripts": {
     "start": "node -r @swc-node/register -r tsconfig-paths/register src/index.ts",
     "dev": "npx nodemon --exec node -r @swc-node/register -r tsconfig-paths/register src/index.ts dev debug",
