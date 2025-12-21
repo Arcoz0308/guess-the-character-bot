@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix ."
   },
+  "postinstall": "npx prisma generate",
   "dependencies": {
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
