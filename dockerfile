@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Generate Prisma client (after schema.prisma is present)
-RUN pnpm prisma generate
+RUN pnpx prisma generate
 
 # Expose port (adjust if your bot uses a specific port)
 EXPOSE 3000
