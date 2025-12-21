@@ -6,7 +6,7 @@
     "node": ">=23.0.0"
   },
   "scripts": {
-    "start": "node -r @swc-node/register -r tsconfig-paths/register src/index.ts",
+    "start": "npx prisma generate & node -r @swc-node/register -r tsconfig-paths/register src/index.ts",
     "dev": "npx nodemon --exec node -r @swc-node/register -r tsconfig-paths/register src/index.ts dev debug",
     "lint": "eslint .",
     "lint:fix": "eslint --fix ."
