@@ -9,6 +9,9 @@ WORKDIR /usr/src/app
 # Copy package.json and pnpm-lock.yaml
 COPY package.json pnpm-lock.yaml* ./
 
+# COPY ENV variable
+COPY .env ./
+
 # Install app dependencies
 RUN pnpm install --frozen-lockfile
 
@@ -17,9 +20,6 @@ COPY . .
 
 # Generate Prisma client (after schema.prisma is present)
 RUN pnpx prisma generate
-
-# Expose port (adjust if your bot uses a specific port)
-EXPOSE 3000
 
 # Start the bot
 CMD [ "pnpm", "start" ]
