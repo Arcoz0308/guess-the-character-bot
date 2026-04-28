@@ -12,6 +12,7 @@ model User {
   sessionScores         UserScore[]
   sessionParticipations GtcParticipation[]
   managedSessions       GtcSessionManager[]
+  createdSessionInvites GtcSessionInvite[]   @relation("GtcSessionInviteCreator")
   receivedPointAwards   PointAward[]         @relation("PointAwardRecipient")
   createdPointAwards    PointAward[]         @relation("PointAwardCreator")
   revokedPointAwards    PointAward[]         @relation("PointAwardRevoker")

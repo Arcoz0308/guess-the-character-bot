@@ -15,6 +15,7 @@ model GtcSession {
   guilds           GtcSessionGuild[]
   participations   GtcParticipation[]
   managers         GtcSessionManager[]
+  invites          GtcSessionInvite[]
   scores           UserScore[]
   pointAwards      PointAward[]
   originalMessages OriginalMessage[]
@@ -70,4 +71,25 @@ model GtcSessionManager {
   @@index([userId])
   @@index([guildId])
   @@index([role])
+}
+
+model GtcSessionInvite {
+  id          Int       @id @default(autoincrement())
+  sessionId   Int
+  codeHash    String
+  createdById String
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  session   GtcSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdBy User       @relation("GtcSessionInviteCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([codeHash])
+  @@index([sessionId])
+  @@index([createdById])
+  @@index([expiresAt])
+  @@index([revokedAt])
 }

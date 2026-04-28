@@ -2,7 +2,7 @@ import { prisma } from "#/prisma/prisma";
 import { buildLabel, buildModal, buildRadioGroup, buildTextInput, createModal, type ModalContextValue } from "arcscord";
 import { EmbedBuilder } from "discord.js";
 import { GtcSessionManagerRole, GtcSessionMode, GtcSessionStatus } from "../../generated/prisma/enums";
-import { upsertDiscordUser } from "../utils/gtc_helpers";
+import { formatGtcSessionMode, upsertDiscordUser } from "../utils/gtc_helpers";
 
 const sessionCreateModalMatcher = "modal:sessionCreate";
 
@@ -16,14 +16,6 @@ function readStringValue(value: ModalContextValue | undefined) {
   }
 
   return undefined;
-}
-
-function formatSessionMode(mode: GtcSessionMode) {
-  if (mode === GtcSessionMode.INTER_GUILD) {
-    return "Interserveur - relais entre plusieurs serveurs";
-  }
-
-  return "Serveur seul - session locale sans relais";
 }
 
 export const sessionCreateModal = createModal({
@@ -165,7 +157,7 @@ export const sessionCreateModal = createModal({
         },
         {
           name: "Mode",
-          value: formatSessionMode(session.mode),
+          value: formatGtcSessionMode(session.mode),
           inline: true,
         },
         {

@@ -1,7 +1,7 @@
 import type { Guild, User } from "discord.js";
-import type { GtcSessionMode } from "../../generated/prisma/enums";
+import type { GtcSessionMode, GtcSessionStatus } from "../../generated/prisma/enums";
 import { prisma } from "#/prisma/prisma";
-import { GtcSessionStatus } from "../../generated/prisma/enums";
+import { GtcSessionMode as PrismaGtcSessionMode, GtcSessionStatus as PrismaGtcSessionStatus } from "../../generated/prisma/enums";
 
 export async function upsertDiscordUser(user: User) {
   return prisma.user.upsert({
@@ -28,7 +28,7 @@ export async function findActiveSessionForGuild(guildId: string, mode?: GtcSessi
   return prisma.gtcSession.findFirst({
     where: {
       mode,
-      status: GtcSessionStatus.ACTIVE,
+      status: PrismaGtcSessionStatus.ACTIVE,
       OR: [
         {
           organizerGuildId: guildId,
@@ -100,4 +100,25 @@ export function messageUrl(guildId: string, channelId: string, messageId: string
 
 export function discordGuildName(guild: Guild) {
   return guild.name;
+}
+
+export function formatGtcSessionMode(mode: GtcSessionMode) {
+  if (mode === PrismaGtcSessionMode.INTER_GUILD) {
+    return "Interserveur - relais entre plusieurs serveurs";
+  }
+
+  return "Serveur seul - session locale sans relais";
+}
+
+export function formatGtcSessionStatus(status: GtcSessionStatus) {
+  switch (status) {
+    case PrismaGtcSessionStatus.ACTIVE:
+      return "Active";
+    case PrismaGtcSessionStatus.CANCELLED:
+      return "Annulée";
+    case PrismaGtcSessionStatus.ENDED:
+      return "Terminée";
+    case PrismaGtcSessionStatus.PLANNED:
+      return "Planifiée";
+  }
 }
