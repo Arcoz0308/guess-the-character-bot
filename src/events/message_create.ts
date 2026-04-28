@@ -3,6 +3,7 @@ import { createEvent } from "arcscord";
 import { ChannelType, WebhookClient } from "discord.js";
 import { GtcSessionMode, MessageDeliveryKind } from "../../generated/prisma/enums";
 import {
+  canSendManagedSessionMessage,
   discordGuildName,
   findActiveSessionForGuild,
   getRelayTargetGuilds,
@@ -63,6 +64,9 @@ export const messageCreateEvent = createEvent({
       return ctx.ok(true);
     }
 
+    const isOrganizerGuildMessage = session.organizerGuildId === message.guild.id;
+    const useBotRelay = isOrganizerGuildMessage && await canSendManagedSessionMessage(session.id, message.author.id);
+
     await prisma.originalMessage.create({
       data: {
         id: message.id,
@@ -87,9 +91,16 @@ export const messageCreateEvent = createEvent({
     });
 
     for (const targetGuildConfig of getRelayTargetGuilds(session, message.guild.id)) {
-      const content = translatePingRole(message.content, sourceGuildConfig, targetGuildConfig);
+      const content = useBotRelay
+        ? translatePingRole(message.content, sourceGuildConfig, targetGuildConfig)
+        : message.content;
 
-      if (targetGuildConfig.webhookUrl) {
+      if (!useBotRelay) {
+        if (!targetGuildConfig.webhookUrl) {
+          ctx.client.logger.warning(`No webhook configured for relay target ${targetGuildConfig.name}`);
+          continue;
+        }
+
         const webhookClient = new WebhookClient({ url: targetGuildConfig.webhookUrl });
         const deliveredMessage = await webhookClient.send({
           allowedMentions: { parse: ["users"] },
@@ -119,7 +130,12 @@ export const messageCreateEvent = createEvent({
         continue;
       }
 
-      const deliveredMessage = await channel.send(content);
+      const deliveredMessage = await channel.send({
+        allowedMentions: {
+          parse: ["users", "roles"],
+        },
+        content,
+      });
       await prisma.deliveredMessage.create({
         data: {
           id: deliveredMessage.id,

@@ -1,7 +1,11 @@
 import type { Guild, User } from "discord.js";
 import type { GtcSessionMode, GtcSessionStatus } from "../../generated/prisma/enums";
 import { prisma } from "#/prisma/prisma";
-import { GtcSessionMode as PrismaGtcSessionMode, GtcSessionStatus as PrismaGtcSessionStatus } from "../../generated/prisma/enums";
+import {
+  GtcSessionManagerRole,
+  GtcSessionMode as PrismaGtcSessionMode,
+  GtcSessionStatus as PrismaGtcSessionStatus,
+} from "../../generated/prisma/enums";
 
 export async function upsertDiscordUser(user: User) {
   return prisma.user.upsert({
@@ -92,6 +96,28 @@ export function translatePingRole(content: string, sourceGuild: { pingRoleId: st
   return content
     .replaceAll(sourceGuild.pingRoleId, targetGuild.pingRoleId)
     .replaceAll(`<@&${sourceGuild.pingRoleId}>`, `<@&${targetGuild.pingRoleId}>`);
+}
+
+export function hasPingRoleMention(content: string, guild: { pingRoleId: string | null }) {
+  if (!guild.pingRoleId) {
+    return false;
+  }
+
+  return content.includes(`<@&${guild.pingRoleId}>`) || content.includes(guild.pingRoleId);
+}
+
+export async function canSendManagedSessionMessage(sessionId: number, userId: string) {
+  const manager = await prisma.gtcSessionManager.findFirst({
+    where: {
+      sessionId,
+      userId,
+      role: {
+        in: [GtcSessionManagerRole.ADMIN, GtcSessionManagerRole.ORGANIZER],
+      },
+    },
+  });
+
+  return manager !== null;
 }
 
 export function messageUrl(guildId: string, channelId: string, messageId: string) {

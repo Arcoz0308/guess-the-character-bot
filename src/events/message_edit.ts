@@ -1,8 +1,9 @@
 import { prisma } from "#/prisma/prisma";
 import { createEvent } from "arcscord";
-import { ChannelType, WebhookClient } from "discord.js";
+import { ChannelType } from "discord.js";
 import { GtcSessionMode, MessageDeliveryKind } from "../../generated/prisma/enums";
 import {
+  canSendManagedSessionMessage,
   findActiveSessionForGuild,
   getSessionGuildConfig,
   translatePingRole,
@@ -36,6 +37,14 @@ export const messageEditEvent = createEvent({
     if (message.channel.id !== sourceGuildConfig.channelId) {
       return ctx.ok(true);
     }
+    if (session.organizerGuildId !== message.guild.id) {
+      const warning = await message.reply("Les modifications de messages depuis un serveur participant ne sont pas relayées.");
+      setTimeout(() => {
+        void warning.delete().catch(() => undefined);
+      }, 5 * 60 * 1000);
+
+      return ctx.ok(true);
+    }
 
     const originalMessage = await prisma.originalMessage.findUnique({
       where: {
@@ -54,6 +63,11 @@ export const messageEditEvent = createEvent({
       return ctx.ok(true);
     }
 
+    const canUseManagedRelay = await canSendManagedSessionMessage(session.id, originalMessage.authorId);
+    if (!canUseManagedRelay) {
+      return ctx.ok(true);
+    }
+
     await prisma.originalMessage.update({
       where: {
         id: message.id,
@@ -65,16 +79,11 @@ export const messageEditEvent = createEvent({
     });
 
     for (const deliveredMessage of originalMessage.deliveredMessages) {
-      const content = translatePingRole(message.content, sourceGuildConfig, deliveredMessage.targetGuild);
-
-      if (deliveredMessage.deliveryKind === MessageDeliveryKind.WEBHOOK && deliveredMessage.targetGuild.webhookUrl) {
-        const webhookClient = new WebhookClient({ url: deliveredMessage.targetGuild.webhookUrl });
-        await webhookClient.editMessage(deliveredMessage.id, {
-          allowedMentions: { parse: ["users"] },
-          content,
-        });
+      if (deliveredMessage.deliveryKind !== MessageDeliveryKind.BOT) {
         continue;
       }
+
+      const content = translatePingRole(message.content, sourceGuildConfig, deliveredMessage.targetGuild);
 
       const guild = await ctx.client.guilds.fetch(deliveredMessage.guildId);
       const channel = guild.channels.cache.get(deliveredMessage.channelId);
@@ -84,7 +93,10 @@ export const messageEditEvent = createEvent({
       }
 
       const messageToEdit = await channel.messages.fetch(deliveredMessage.id);
-      await messageToEdit.edit(content);
+      await messageToEdit.edit({
+        allowedMentions: { parse: ["users", "roles"] },
+        content,
+      });
     }
 
     return ctx.ok(true);
