@@ -1,0 +1,73 @@
+model GtcSession {
+  id               String           @id @default(cuid())
+  name             String
+  mode             GtcSessionMode
+  status           GtcSessionStatus @default(PLANNED)
+  organizerGuildId String
+  pointsEnabled    Boolean          @default(true)
+  pointsPerAward   Int              @default(1)
+  startedAt        DateTime?
+  endedAt          DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  organizerGuild   Guild               @relation("GtcSessionOrganizerGuild", fields: [organizerGuildId], references: [id], onDelete: Cascade)
+  guilds           GtcSessionGuild[]
+  participations   GtcParticipation[]
+  managers         GtcSessionManager[]
+  scores           UserScore[]
+  pointAwards      PointAward[]
+  originalMessages OriginalMessage[]
+
+  @@index([mode])
+  @@index([status])
+  @@index([organizerGuildId])
+  @@index([startedAt])
+}
+
+model GtcSessionGuild {
+  id        String   @id @default(cuid())
+  sessionId String
+  guildId   String
+  joinedAt  DateTime @default(now())
+
+  session GtcSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  guild   Guild      @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, guildId])
+  @@index([guildId])
+}
+
+model GtcParticipation {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  guildId   String?
+  joinedAt  DateTime @default(now())
+
+  session GtcSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  guild   Guild?     @relation(fields: [guildId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, userId])
+  @@index([userId])
+  @@index([guildId])
+}
+
+model GtcSessionManager {
+  id        String                @id @default(cuid())
+  sessionId String
+  userId    String
+  guildId   String?
+  role      GtcSessionManagerRole
+  createdAt DateTime              @default(now())
+
+  session GtcSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  guild   Guild?     @relation(fields: [guildId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, userId, role])
+  @@index([userId])
+  @@index([guildId])
+  @@index([role])
+}

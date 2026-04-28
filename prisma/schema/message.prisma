@@ -1,0 +1,73 @@
+model OriginalMessage {
+  id          String    @id
+  sessionId   String?
+  guildId     String
+  guildName   String
+  channelId   String
+  authorId    String
+  content     String    @db.Text
+  attachments Json?
+  embeds      Json?
+  sentAt      DateTime
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sourceGuild       Guild              @relation("SourceGuildOriginalMessages", fields: [guildId], references: [id], onDelete: Cascade)
+  session           GtcSession?        @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  author            User               @relation("OriginalMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  deliveredMessages DeliveredMessage[]
+  pointAwards       PointAward[]       @relation("PointAwardOriginalMessage")
+  deletionLogs      MessageDeletion[]  @relation("DeletionOriginalMessage")
+
+  @@index([sessionId])
+  @@index([guildId, channelId])
+  @@index([authorId])
+  @@index([sentAt])
+}
+
+model DeliveredMessage {
+  id                String              @id
+  originalMessageId String
+  guildId           String
+  guildName         String
+  channelId         String
+  deliveryKind      MessageDeliveryKind
+  webhookId         String?
+  sentAt            DateTime
+  deletedAt         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  originalMessage OriginalMessage   @relation(fields: [originalMessageId], references: [id], onDelete: Cascade)
+  targetGuild     Guild             @relation("TargetGuildDeliveredMessages", fields: [guildId], references: [id], onDelete: Cascade)
+  deletionLogs    MessageDeletion[] @relation("DeletionDeliveredMessage")
+
+  @@index([originalMessageId])
+  @@index([guildId, channelId])
+}
+
+model MessageDeletion {
+  id                    String         @id @default(cuid())
+  target                DeletionTarget
+  requestedFromGuildId  String
+  requestedById         String
+  originalMessageId     String?
+  deliveredMessageId    String?
+  reason                String?
+  deletedOriginal       Boolean        @default(false)
+  deletedDeliveredCount Int            @default(0)
+  failedDeliveredCount  Int            @default(0)
+  createdAt             DateTime       @default(now())
+
+  requestedFromGuild Guild             @relation("RequestedFromGuildDeletions", fields: [requestedFromGuildId], references: [id], onDelete: Cascade)
+  requestedBy        User              @relation("MessageDeletionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  originalMessage    OriginalMessage?  @relation("DeletionOriginalMessage", fields: [originalMessageId], references: [id], onDelete: SetNull)
+  deliveredMessage   DeliveredMessage? @relation("DeletionDeliveredMessage", fields: [deliveredMessageId], references: [id], onDelete: SetNull)
+
+  @@index([requestedFromGuildId])
+  @@index([requestedById])
+  @@index([originalMessageId])
+  @@index([deliveredMessageId])
+}

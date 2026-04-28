@@ -1,0 +1,36 @@
+enum MessageDeliveryKind {
+  BOT
+  WEBHOOK
+}
+
+enum UserRole {
+  ADMIN
+}
+
+enum GtcSessionManagerRole {
+  ADMIN
+  ORGANIZER
+}
+
+enum GtcSessionMode {
+  INTER_GUILD
+  SINGLE_GUILD
+}
+
+enum GtcSessionStatus {
+  PLANNED
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+enum PointAwardStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum DeletionTarget {
+  ORIGINAL
+  DELIVERED
+  ALL_RELAYED
+}

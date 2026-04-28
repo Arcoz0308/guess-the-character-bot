@@ -1,0 +1,23 @@
+model User {
+  id         String     @id
+  username   String
+  globalName String?
+  bot        Boolean    @default(false)
+  roles      UserRole[] @default([])
+  active     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  originalMessages      OriginalMessage[]    @relation("OriginalMessageAuthor")
+  sessionScores         UserScore[]
+  sessionParticipations GtcParticipation[]
+  managedSessions       GtcSessionManager[]
+  receivedPointAwards   PointAward[]         @relation("PointAwardRecipient")
+  createdPointAwards    PointAward[]         @relation("PointAwardCreator")
+  revokedPointAwards    PointAward[]         @relation("PointAwardRevoker")
+  requestedDeletions    MessageDeletion[]    @relation("MessageDeletionRequester")
+  guildSettingChanges   GuildSettingChange[] @relation("GuildSettingChangeUser")
+
+  @@index([roles])
+  @@index([active])
+}

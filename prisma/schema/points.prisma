@@ -1,0 +1,44 @@
+model UserScore {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session GtcSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, points])
+  @@index([userId])
+}
+
+model PointAward {
+  id                String           @id @default(cuid())
+  sessionId         String
+  guildId           String
+  awardedToId       String
+  points            Int
+  status            PointAwardStatus @default(ACTIVE)
+  reason            String?
+  awardedById       String
+  originalMessageId String?
+  revokedAt         DateTime?
+  revokedById       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  session         GtcSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  guild           Guild            @relation("GuildPointAwards", fields: [guildId], references: [id], onDelete: Cascade)
+  awardedTo       User             @relation("PointAwardRecipient", fields: [awardedToId], references: [id], onDelete: Restrict)
+  awardedBy       User             @relation("PointAwardCreator", fields: [awardedById], references: [id], onDelete: Restrict)
+  revokedBy       User?            @relation("PointAwardRevoker", fields: [revokedById], references: [id], onDelete: SetNull)
+  originalMessage OriginalMessage? @relation("PointAwardOriginalMessage", fields: [originalMessageId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([guildId, awardedToId])
+  @@index([awardedById])
+  @@index([originalMessageId])
+  @@index([status])
+}

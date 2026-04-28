@@ -1,0 +1,42 @@
+model Guild {
+  id                     String   @id
+  name                   String
+  isOrganizerGuild       Boolean  @default(false)
+  channelId              String?
+  pingRoleId             String?
+  webhookUrl             String?
+  relayMessages          Boolean  @default(true)
+  relayReactions         Boolean  @default(true)
+  allowOrganizerDeletion Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  sourceOriginalMessages  OriginalMessage[]    @relation("SourceGuildOriginalMessages")
+  targetDeliveredMessages DeliveredMessage[]   @relation("TargetGuildDeliveredMessages")
+  organizedSessions       GtcSession[]         @relation("GtcSessionOrganizerGuild")
+  sessionGuilds           GtcSessionGuild[]
+  sessionParticipations   GtcParticipation[]
+  managedSessions         GtcSessionManager[]
+  pointAwards             PointAward[]         @relation("GuildPointAwards")
+  deletionLogs            MessageDeletion[]    @relation("RequestedFromGuildDeletions")
+  settingChanges          GuildSettingChange[]
+
+  @@index([isOrganizerGuild])
+  @@index([channelId])
+}
+
+model GuildSettingChange {
+  id          String   @id @default(cuid())
+  guildId     String
+  changedById String
+  key         String
+  oldValue    Json?
+  newValue    Json?
+  createdAt   DateTime @default(now())
+
+  guild     Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  changedBy User  @relation("GuildSettingChangeUser", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([guildId, createdAt])
+  @@index([changedById])
+}
