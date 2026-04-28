@@ -1,8 +1,8 @@
 import { prisma } from "#/prisma/prisma";
-import { createCommand } from "arcscord";
+import { buildButtonActionRow, createCommand } from "arcscord";
 import { EmbedBuilder } from "discord.js";
 import { GtcSessionMode, GtcSessionStatus } from "../../../generated/prisma/enums";
-import { upsertDiscordUser } from "../../utils/gtc_helpers";
+import { sessionJoinButton } from "../../components/session_join_buttons";
 import { findActiveSessionConflict, hashInviteCode, sessionCanAcceptGuild } from "./helpers";
 
 export const joinCommand = createCommand({
@@ -83,42 +83,10 @@ export const joinCommand = createCommand({
       return ctx.reply("Ce serveur participe déjà à cette session.", { ephemeral: true });
     }
 
-    await upsertDiscordUser(ctx.user);
-    await prisma.$transaction([
-      prisma.guild.upsert({
-        where: {
-          id: guild.id,
-        },
-        update: {
-          name: guild.name,
-        },
-        create: {
-          id: guild.id,
-          name: guild.name,
-        },
-      }),
-      prisma.gtcSessionGuild.create({
-        data: {
-          sessionId: invite.sessionId,
-          guildId: guild.id,
-        },
-      }),
-      prisma.gtcSessionInvite.update({
-        where: {
-          id: invite.id,
-        },
-        data: {
-          usedCount: {
-            increment: 1,
-          },
-        },
-      }),
-    ]);
-
     const embed = new EmbedBuilder()
-      .setColor(0x2ECC71)
-      .setTitle("Session rejointe")
-      .setDescription(`Le serveur **${guild.name}** a rejoint **${invite.session.name}**.`)
+      .setColor(0xF1C40F)
+      .setTitle("Confirmer la participation")
+      .setDescription(`Tu es sur le point d'ajouter **${guild.name}** à la session **${invite.session.name}**.`)
       .addFields(
         {
           name: "Session",
@@ -126,13 +94,37 @@ export const joinCommand = createCommand({
           inline: true,
         },
         {
-          name: "Rôle local",
-          value: "Aucun rôle organisateur ajouté automatiquement",
+          name: "Ce que cela autorise",
+          value: [
+            "Les messages du salon GTC configuré sur ce serveur pourront être relayés aux autres serveurs de la session.",
+            "Les messages relayés depuis les autres serveurs pourront être envoyés dans le salon GTC configuré ici.",
+            "Le serveur organisateur pourra retirer ce serveur de la session.",
+            "Aucun rôle organisateur n'est ajouté automatiquement.",
+          ].join("\n"),
+          inline: false,
+        },
+        {
+          name: "Mentions de rôle",
+          value: [
+            "Les messages envoyés depuis un serveur participant sont relayés par webhook sans traduction de ping.",
+            "Les messages du serveur organisateur envoyés par un admin/organisateur de session peuvent ping le rôle GTC configuré.",
+            "Seul le rôle défini dans les paramètres du serveur peut être ping par le relais.",
+            "Si aucun rôle GTC n'est configuré sur ce serveur, aucun ping de rôle ne sera autorisé ici.",
+          ].join("\n"),
           inline: false,
         },
       )
       .setTimestamp();
 
-    return ctx.reply({ embeds: [embed], ephemeral: true });
+    return ctx.reply({
+      components: [
+        buildButtonActionRow(
+          sessionJoinButton.build("accept", String(invite.id), ctx.user.id),
+          sessionJoinButton.build("cancel", String(invite.id), ctx.user.id),
+        ),
+      ],
+      embeds: [embed],
+      ephemeral: true,
+    });
   },
 });
