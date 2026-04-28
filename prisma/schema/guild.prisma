@@ -26,7 +26,7 @@ model Guild {
 }
 
 model GuildSettingChange {
-  id          String   @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   guildId     String
   changedById String
   key         String

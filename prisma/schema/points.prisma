@@ -1,6 +1,6 @@
 model UserScore {
-  id        String   @id @default(cuid())
-  sessionId String
+  id        Int      @id @default(autoincrement())
+  sessionId Int
   userId    String
   points    Int      @default(0)
   createdAt DateTime @default(now())
@@ -15,8 +15,8 @@ model UserScore {
 }
 
 model PointAward {
-  id                String           @id @default(cuid())
-  sessionId         String
+  id                Int              @id @default(autoincrement())
+  sessionId         Int
   guildId           String
   awardedToId       String
   points            Int

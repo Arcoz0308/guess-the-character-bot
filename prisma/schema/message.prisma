@@ -1,6 +1,6 @@
 model OriginalMessage {
   id          String    @id
-  sessionId   String?
+  sessionId   Int?
   guildId     String
   guildName   String
   channelId   String
@@ -49,7 +49,7 @@ model DeliveredMessage {
 }
 
 model MessageDeletion {
-  id                    String         @id @default(cuid())
+  id                    Int            @id @default(autoincrement())
   target                DeletionTarget
   requestedFromGuildId  String
   requestedById         String

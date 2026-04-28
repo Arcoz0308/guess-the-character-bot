@@ -1,5 +1,5 @@
 model GtcSession {
-  id               String           @id @default(cuid())
+  id               Int              @id @default(autoincrement())
   name             String
   mode             GtcSessionMode
   status           GtcSessionStatus @default(PLANNED)
@@ -26,8 +26,8 @@ model GtcSession {
 }
 
 model GtcSessionGuild {
-  id        String   @id @default(cuid())
-  sessionId String
+  id        Int      @id @default(autoincrement())
+  sessionId Int
   guildId   String
   joinedAt  DateTime @default(now())
 
@@ -39,8 +39,8 @@ model GtcSessionGuild {
 }
 
 model GtcParticipation {
-  id        String   @id @default(cuid())
-  sessionId String
+  id        Int      @id @default(autoincrement())
+  sessionId Int
   userId    String
   guildId   String?
   joinedAt  DateTime @default(now())
@@ -55,8 +55,8 @@ model GtcParticipation {
 }
 
 model GtcSessionManager {
-  id        String                @id @default(cuid())
-  sessionId String
+  id        Int                   @id @default(autoincrement())
+  sessionId Int
   userId    String
   guildId   String?
   role      GtcSessionManagerRole

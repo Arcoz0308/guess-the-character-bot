@@ -1,6 +1,15 @@
 import { prisma } from "#/prisma/prisma";
 import { createEvent } from "arcscord";
 import { ChannelType, WebhookClient } from "discord.js";
+import { GtcSessionMode, MessageDeliveryKind } from "../../generated/prisma/enums";
+import {
+  discordGuildName,
+  findActiveSessionForGuild,
+  getRelayTargetGuilds,
+  getSessionGuildConfig,
+  translatePingRole,
+  upsertDiscordUser,
+} from "../utils/gtc_helpers";
 
 export const messageCreateEvent = createEvent({
   event: "messageCreate",
@@ -9,7 +18,6 @@ export const messageCreateEvent = createEvent({
     if (message.author.bot) {
       return ctx.ok(true);
     }
-
     if (message.content === "") {
       return ctx.ok(true);
     }
@@ -17,113 +25,114 @@ export const messageCreateEvent = createEvent({
       return ctx.ok(true);
     }
 
-    const guildSettings = await prisma.guild.findUnique({
+    const session = await findActiveSessionForGuild(message.guild.id);
+    if (!session) {
+      return ctx.ok(true);
+    }
+
+    const sourceGuildConfig = getSessionGuildConfig(session, message.guild.id);
+    if (!sourceGuildConfig?.channelId) {
+      return ctx.ok(true);
+    }
+    if (message.channel.id !== sourceGuildConfig.channelId) {
+      return ctx.ok(true);
+    }
+
+    await upsertDiscordUser(message.author);
+    await prisma.gtcParticipation.upsert({
       where: {
-        id: message.guild.id,
+        sessionId_userId: {
+          sessionId: session.id,
+          userId: message.author.id,
+        },
       },
-    });
-
-    if (!guildSettings) {
-      return ctx.ok(true);
-    }
-
-    if (message.channel.id !== guildSettings.channelId) {
-      return ctx.ok(true);
-    }
-
-    // send message to alls channels
-    if (guildSettings.organist) {
-      await prisma.originalMessage.create({
-        data: {
-          id: message.id,
-          channelId: message.channel.id,
-          content: message.content,
-          guildId: message.guild.id,
-        },
-      });
-      const guilds = await prisma.guild.findMany({
-        where: {
-          sendMessages: true,
-        },
-      });
-      for (const guild of guilds) {
-        // don't send message in same guild that the message was sent
-        if (guild.id === message.guild.id) {
-          continue;
-        }
-
-        const discordGuild = await ctx.client.guilds.fetch(guild.id);
-        if (!discordGuild) {
-          continue;
-        }
-        const channel = discordGuild.channels.cache.get(guild.channelId);
-        if (!channel) {
-          continue;
-        }
-        if (channel.type !== ChannelType.GuildText) {
-          ctx.client.logger.error(`Channel is not a text channel in server ${guild.name}`);
-          continue;
-        }
-        const sendedMessage = await channel.send(message.content.replaceAll(guildSettings.pingRoleId, guild.pingRoleId));
-        await prisma.sendedMessage.create({
-          data: {
-            id: sendedMessage.id,
-            guildId: guild.id,
-            channelId: channel.id,
-            originalMessageId: message.id,
-            originalMessageChannelId: message.channel.id,
-            bot: true,
-          },
-        });
-      }
-      return ctx.ok(true);
-    }
-    await prisma.originalMessage.create({
-      data: {
-        id: message.id,
-        channelId: message.channel.id,
-        content: message.content,
+      update: {
+        guildId: message.guild.id,
+      },
+      create: {
+        sessionId: session.id,
+        userId: message.author.id,
         guildId: message.guild.id,
       },
     });
-    // send message to alls channels with webhook
-    const guilds = await prisma.guild.findMany({
-      where: {
-        sendMessages: true,
+
+    if (session.mode !== GtcSessionMode.INTER_GUILD) {
+      return ctx.ok(true);
+    }
+    if (!sourceGuildConfig.relayMessages) {
+      return ctx.ok(true);
+    }
+
+    await prisma.originalMessage.create({
+      data: {
+        id: message.id,
+        sessionId: session.id,
+        guildId: message.guild.id,
+        guildName: discordGuildName(message.guild),
+        channelId: message.channel.id,
+        authorId: message.author.id,
+        content: message.content,
+        attachments: message.attachments.map(attachment => ({
+          contentType: attachment.contentType,
+          id: attachment.id,
+          name: attachment.name,
+          size: attachment.size,
+          url: attachment.url,
+        })),
+        embeds: JSON.parse(JSON.stringify({
+          items: message.embeds.map(embed => embed.toJSON()),
+        })),
+        sentAt: message.createdAt,
       },
     });
-    for (const guild of guilds) {
-      // don't send message in same guild that the message was sent
-      if (guild.id === message.guild.id) {
+
+    for (const targetGuildConfig of getRelayTargetGuilds(session, message.guild.id)) {
+      const content = translatePingRole(message.content, sourceGuildConfig, targetGuildConfig);
+
+      if (targetGuildConfig.webhookUrl) {
+        const webhookClient = new WebhookClient({ url: targetGuildConfig.webhookUrl });
+        const deliveredMessage = await webhookClient.send({
+          allowedMentions: { parse: ["users"] },
+          avatarURL: message.author.avatarURL() || undefined,
+          content,
+          username: message.author.username,
+        });
+
+        await prisma.deliveredMessage.create({
+          data: {
+            id: deliveredMessage.id,
+            originalMessageId: message.id,
+            guildId: targetGuildConfig.id,
+            guildName: targetGuildConfig.name,
+            channelId: targetGuildConfig.channelId!,
+            deliveryKind: MessageDeliveryKind.WEBHOOK,
+            sentAt: new Date(),
+          },
+        });
         continue;
       }
 
-      if (guild.sendMessages === false) {
-        continue;
-      }
-      if (guild.webhookUrl === "") {
-        ctx.client.logger.error(`Webhook url is empty in server ${guild.name}`);
+      const discordGuild = await ctx.client.guilds.fetch(targetGuildConfig.id);
+      const channel = discordGuild.channels.cache.get(targetGuildConfig.channelId!);
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        ctx.client.logger.error(`Channel is not a text channel in server ${targetGuildConfig.name}`);
         continue;
       }
 
-      const webhookClient = new WebhookClient({ url: guild.webhookUrl });
-      const sendedMessage = await webhookClient.send({
-        content: message.content,
-        avatarURL: message.author.avatarURL() || undefined,
-        username: message.author.username,
-        allowedMentions: { parse: ["users"] },
-      });
-      await prisma.sendedMessage.create({
+      const deliveredMessage = await channel.send(content);
+      await prisma.deliveredMessage.create({
         data: {
-          id: sendedMessage.id,
-          guildId: guild.id,
-          channelId: guild.channelId,
+          id: deliveredMessage.id,
           originalMessageId: message.id,
-          originalMessageChannelId: message.channel.id,
-          bot: false,
+          guildId: targetGuildConfig.id,
+          guildName: targetGuildConfig.name,
+          channelId: channel.id,
+          deliveryKind: MessageDeliveryKind.BOT,
+          sentAt: deliveredMessage.createdAt,
         },
       });
     }
+
     return ctx.ok(true);
   },
 });
