@@ -8,6 +8,7 @@ import {
   findActiveSessionForGuild,
   getRelayTargetGuilds,
   getSessionGuildConfig,
+  relayAllowedMentions,
   translatePingRole,
   upsertDiscordUser,
 } from "../utils/gtc_helpers";
@@ -103,7 +104,7 @@ export const messageCreateEvent = createEvent({
 
         const webhookClient = new WebhookClient({ url: targetGuildConfig.webhookUrl });
         const deliveredMessage = await webhookClient.send({
-          allowedMentions: { parse: ["users"] },
+          allowedMentions: relayAllowedMentions(targetGuildConfig),
           avatarURL: message.author.avatarURL() || undefined,
           content,
           username: message.author.username,
@@ -131,9 +132,7 @@ export const messageCreateEvent = createEvent({
       }
 
       const deliveredMessage = await channel.send({
-        allowedMentions: {
-          parse: ["users", "roles"],
-        },
+        allowedMentions: relayAllowedMentions(targetGuildConfig),
         content,
       });
       await prisma.deliveredMessage.create({

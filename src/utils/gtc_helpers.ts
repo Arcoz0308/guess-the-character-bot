@@ -120,6 +120,13 @@ export async function canSendManagedSessionMessage(sessionId: number, userId: st
   return manager !== null;
 }
 
+export function relayAllowedMentions(guild: { pingRoleId: string | null }) {
+  return {
+    parse: ["users"] as const,
+    roles: guild.pingRoleId ? [guild.pingRoleId] : [],
+  };
+}
+
 export function messageUrl(guildId: string, channelId: string, messageId: string) {
   return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
 }

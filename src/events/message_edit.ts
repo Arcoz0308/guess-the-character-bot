@@ -6,6 +6,7 @@ import {
   canSendManagedSessionMessage,
   findActiveSessionForGuild,
   getSessionGuildConfig,
+  relayAllowedMentions,
   translatePingRole,
 } from "../utils/gtc_helpers";
 
@@ -94,7 +95,7 @@ export const messageEditEvent = createEvent({
 
       const messageToEdit = await channel.messages.fetch(deliveredMessage.id);
       await messageToEdit.edit({
-        allowedMentions: { parse: ["users", "roles"] },
+        allowedMentions: relayAllowedMentions(deliveredMessage.targetGuild),
         content,
       });
     }
