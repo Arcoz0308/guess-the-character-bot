@@ -13,23 +13,23 @@
   },
   "postinstall": "npx prisma generate",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
-    "arcscord": "0.3.0-beta-8",
-    "discord.js": "^14.16.3",
-    "pg": "^8.16.3",
-    "prisma": "^7.2.0"
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "arcscord": "0.3.0-beta-9",
+    "discord.js": "^14.26.3",
+    "pg": "^8.20.0",
+    "prisma": "^7.8.0"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^3.11.0",
-    "@swc-node/core": "^1.13.3",
-    "@swc-node/register": "^1.10.9",
-    "@types/node": "^20.16.13",
-    "dotenv": "^16.4.5",
-    "eslint": "^9.17.0",
-    "nodemon": "^3.1.7",
-    "tsc-alias": "^1.8.10",
+    "@antfu/eslint-config": "^3.16.0",
+    "@swc-node/core": "^1.14.1",
+    "@swc-node/register": "^1.11.1",
+    "@types/node": "^20.19.39",
+    "dotenv": "^16.6.1",
+    "eslint": "^9.39.4",
+    "nodemon": "^3.1.14",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.9.3"
   }
 }
