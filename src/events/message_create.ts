@@ -20,7 +20,7 @@ export const messageCreateEvent = createEvent({
     if (message.author.bot) {
       return ctx.ok(true);
     }
-    if (message.content === "") {
+    if (message.content === "" && message.attachments.size === 0) {
       return ctx.ok(true);
     }
     if (!message.guild) {
@@ -95,6 +95,7 @@ export const messageCreateEvent = createEvent({
       const content = useBotRelay
         ? translatePingRole(message.content, sourceGuildConfig, targetGuildConfig)
         : message.content;
+      const files = message.attachments.map(attachment => attachment.url);
 
       if (!useBotRelay) {
         if (!targetGuildConfig.webhookUrl) {
@@ -107,6 +108,7 @@ export const messageCreateEvent = createEvent({
           allowedMentions: relayAllowedMentions(targetGuildConfig),
           avatarURL: message.author.avatarURL() || undefined,
           content,
+          files,
           username: message.author.username,
         });
 
@@ -134,6 +136,7 @@ export const messageCreateEvent = createEvent({
       const deliveredMessage = await channel.send({
         allowedMentions: relayAllowedMentions(targetGuildConfig),
         content,
+        files,
       });
       await prisma.deliveredMessage.create({
         data: {

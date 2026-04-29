@@ -11,7 +11,7 @@ import {
   type TextDisplay,
 } from "arcscord";
 import { type InteractionReplyOptions, MessageFlags } from "discord.js";
-import { GtcSessionStatus } from "../../generated/prisma/enums";
+import { GtcSessionMode, GtcSessionStatus } from "../../generated/prisma/enums";
 import { findActiveSessionConflict, isSessionAdmin } from "../commands/session/helpers";
 import { formatGtcSessionMode, formatGtcSessionStatus } from "../utils/gtc_helpers";
 import { sessionManagerModal } from "./session_manager_modal";
@@ -146,7 +146,10 @@ export async function buildSessionManageMessage(sessionId: number, userId: strin
       && (!invite.expiresAt || invite.expiresAt.getTime() > Date.now())
       && (invite.maxUses === null || invite.usedCount < invite.maxUses);
   });
-  const servers = [session.organizerGuild.name, ...session.guilds.map(sessionGuild => sessionGuild.guild.name)];
+  const servers = session.mode === GtcSessionMode.SINGLE_GUILD
+    ? [session.organizerGuild.name]
+    : [session.organizerGuild.name, ...session.guilds.map(sessionGuild => sessionGuild.guild.name)];
+  const serverTitle = session.mode === GtcSessionMode.SINGLE_GUILD ? "Serveur" : "Serveurs";
   const controls = buildButtonActionRow(
     buildManageButton("start", String(session.id), userId, String(isActionDisabled("start", session.status))),
     buildManageButton("end", String(session.id), userId, String(isActionDisabled("end", session.status))),
@@ -197,7 +200,7 @@ export async function buildSessionManageMessage(sessionId: number, userId: strin
           }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              `**Serveurs**: ${servers.length}`,
+              `**${serverTitle}**: ${servers.length}`,
               servers.slice(0, 8).map(server => `- ${server}`).join("\n"),
               servers.length > 8 ? `- +${servers.length - 8} autre(s)` : "",
             ].filter(Boolean).join("\n"),

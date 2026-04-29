@@ -1,7 +1,7 @@
 import { prisma } from "#/prisma/prisma";
 import { createCommand } from "arcscord";
 import { EmbedBuilder } from "discord.js";
-import { GtcSessionStatus } from "../../../generated/prisma/enums";
+import { GtcSessionMode, GtcSessionStatus } from "../../../generated/prisma/enums";
 import { formatGtcSessionMode, formatGtcSessionStatus } from "../../utils/gtc_helpers";
 
 function formatDate(date: Date | null) {
@@ -157,7 +157,9 @@ export const infoCommand = createCommand({
       return ctx.reply("Session introuvable pour ce serveur.", { ephemeral: true });
     }
 
-    const participantGuilds = session.guilds.map(sessionGuild => sessionGuild.guild.name);
+    const participantGuilds = session.mode === GtcSessionMode.SINGLE_GUILD
+      ? []
+      : session.guilds.map(sessionGuild => sessionGuild.guild.name);
     const managers = session.managers.map((manager) => {
       const displayName = manager.user.globalName ?? manager.user.username;
       const guildName = manager.guild?.name ? ` - ${manager.guild.name}` : "";
@@ -203,8 +205,10 @@ export const infoCommand = createCommand({
           inline: true,
         },
         {
-          name: "Serveurs participants",
-          value: participantGuilds.length > 0 ? truncateField(participantGuilds.join("\n")) : "Aucun serveur participant",
+          name: session.mode === GtcSessionMode.SINGLE_GUILD ? "Participation interserveur" : "Serveurs participants",
+          value: session.mode === GtcSessionMode.SINGLE_GUILD
+            ? "Non applicable en mode serveur seul"
+            : participantGuilds.length > 0 ? truncateField(participantGuilds.join("\n")) : "Aucun serveur participant",
           inline: false,
         },
         {

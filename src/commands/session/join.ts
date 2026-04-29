@@ -1,6 +1,6 @@
 import { prisma } from "#/prisma/prisma";
 import { buildButtonActionRow, createCommand } from "arcscord";
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, PermissionFlagsBits } from "discord.js";
 import { GtcSessionMode, GtcSessionStatus } from "../../../generated/prisma/enums";
 import { sessionJoinButton } from "../../components/session_join_buttons";
 import { findActiveSessionConflict, hashInviteCode, sessionCanAcceptGuild } from "./helpers";
@@ -29,6 +29,9 @@ export const joinCommand = createCommand({
     const guild = ctx.guild;
     if (!guild) {
       return ctx.reply("Cette commande doit être utilisée dans un serveur.", { ephemeral: true });
+    }
+    if (!ctx.interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+      return ctx.reply("Seul un administrateur Discord peut ajouter ce serveur à une session.", { ephemeral: true });
     }
 
     const invite = await prisma.gtcSessionInvite.findFirst({

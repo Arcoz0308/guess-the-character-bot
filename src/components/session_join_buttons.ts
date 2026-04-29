@@ -57,8 +57,44 @@ async function acceptSessionJoin(inviteId: number, guild: Guild, user: User) {
   }
 
   await upsertDiscordUser(user);
-  await prisma.$transaction([
-    prisma.guild.upsert({
+  const acceptError = await prisma.$transaction(async (tx) => {
+    const existingGuildInTransaction = await tx.gtcSessionGuild.findUnique({
+      where: {
+        sessionId_guildId: {
+          sessionId: invite.sessionId,
+          guildId: guild.id,
+        },
+      },
+    });
+    if (existingGuildInTransaction) {
+      return "Ce serveur participe déjà à cette session.";
+    }
+
+    const consumedInvite = await tx.gtcSessionInvite.updateMany({
+      where: {
+        id: invite.id,
+        OR: [
+          {
+            maxUses: null,
+          },
+          {
+            usedCount: {
+              lt: invite.maxUses ?? 0,
+            },
+          },
+        ],
+      },
+      data: {
+        usedCount: {
+          increment: 1,
+        },
+      },
+    });
+    if (consumedInvite.count === 0) {
+      return "Cette invitation n'a plus d'utilisation disponible.";
+    }
+
+    await tx.guild.upsert({
       where: {
         id: guild.id,
       },
@@ -69,24 +105,19 @@ async function acceptSessionJoin(inviteId: number, guild: Guild, user: User) {
         id: guild.id,
         name: guild.name,
       },
-    }),
-    prisma.gtcSessionGuild.create({
+    });
+    await tx.gtcSessionGuild.create({
       data: {
         sessionId: invite.sessionId,
         guildId: guild.id,
       },
-    }),
-    prisma.gtcSessionInvite.update({
-      where: {
-        id: invite.id,
-      },
-      data: {
-        usedCount: {
-          increment: 1,
-        },
-      },
-    }),
-  ]);
+    });
+
+    return null;
+  });
+  if (acceptError) {
+    return acceptError;
+  }
 
   return new EmbedBuilder()
     .setColor(0x2ECC71)

@@ -14,7 +14,6 @@ export const sessionCommandDef = {
   name: "session",
   description: "Gérer les sessions GTC",
   subCommands: [createSubCommand, manageCommand, listCommand, infoCommand, joinCommand, leaveCommand],
-  defaultMemberPermissions: "Administrator",
   contexts: ["guild"],
   subCommandsGroups: {
     invite: {

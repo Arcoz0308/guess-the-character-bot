@@ -1,4 +1,5 @@
 import { createCommand } from "arcscord";
+import { PermissionFlagsBits } from "discord.js";
 import { sessionCreateModal } from "../../components/session_create_modal";
 
 export const createSubCommand = createCommand({
@@ -9,6 +10,9 @@ export const createSubCommand = createCommand({
   run: (ctx) => {
     if (!ctx.guild) {
       return ctx.reply("Cette commande doit être utilisée dans un serveur.", { ephemeral: true });
+    }
+    if (!ctx.interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+      return ctx.reply("Seul un administrateur Discord peut créer une session.", { ephemeral: true });
     }
 
     return ctx.showModal(sessionCreateModal.build("Créer une session GTC"));

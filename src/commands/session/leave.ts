@@ -1,5 +1,6 @@
 import { prisma } from "#/prisma/prisma";
 import { createCommand } from "arcscord";
+import { PermissionFlagsBits } from "discord.js";
 import { findVisibleSession, sendSessionAutocomplete } from "./helpers";
 
 export const leaveCommand = createCommand({
@@ -20,6 +21,9 @@ export const leaveCommand = createCommand({
     const guild = ctx.guild;
     if (!guild) {
       return ctx.reply("Cette commande doit être utilisée dans un serveur.", { ephemeral: true });
+    }
+    if (!ctx.interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+      return ctx.reply("Seul un administrateur Discord peut retirer ce serveur d'une session.", { ephemeral: true });
     }
 
     const sessionId = Number.parseInt(ctx.options.session, 10);

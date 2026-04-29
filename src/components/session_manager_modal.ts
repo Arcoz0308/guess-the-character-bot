@@ -120,6 +120,7 @@ export const sessionManagerModal = createModal({
         },
         update: {},
         create: {
+          guildId: ctx.guildId,
           role,
           sessionId: parsedSessionId,
           userId: selectedUserId,

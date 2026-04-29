@@ -94,16 +94,7 @@ export function translatePingRole(content: string, sourceGuild: { pingRoleId: st
   }
 
   return content
-    .replaceAll(sourceGuild.pingRoleId, targetGuild.pingRoleId)
     .replaceAll(`<@&${sourceGuild.pingRoleId}>`, `<@&${targetGuild.pingRoleId}>`);
-}
-
-export function hasPingRoleMention(content: string, guild: { pingRoleId: string | null }) {
-  if (!guild.pingRoleId) {
-    return false;
-  }
-
-  return content.includes(`<@&${guild.pingRoleId}>`) || content.includes(guild.pingRoleId);
 }
 
 export async function canSendManagedSessionMessage(sessionId: number, userId: string) {
