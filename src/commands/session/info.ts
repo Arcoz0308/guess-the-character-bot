@@ -2,7 +2,7 @@ import { prisma } from "#/prisma/prisma";
 import { createCommand } from "arcscord";
 import { EmbedBuilder } from "discord.js";
 import { GtcSessionMode, GtcSessionStatus } from "../../../generated/prisma/enums";
-import { formatGtcSessionMode, formatGtcSessionStatus } from "../../utils/gtc_helpers";
+import { formatGtcSessionManagerRole, formatGtcSessionModeDetails, formatGtcSessionStatus } from "../../utils/gtc_helpers";
 
 function formatDate(date: Date | null) {
   if (!date) {
@@ -164,7 +164,7 @@ export const infoCommand = createCommand({
       const displayName = manager.user.globalName ?? manager.user.username;
       const guildName = manager.guild?.name ? ` - ${manager.guild.name}` : "";
 
-      return `<@${manager.userId}> (${displayName}) - ${manager.role}${guildName}`;
+      return `<@${manager.userId}> (${displayName}) - ${formatGtcSessionManagerRole(manager.role)}${guildName}`;
     });
 
     const embed = new EmbedBuilder()
@@ -179,7 +179,7 @@ export const infoCommand = createCommand({
         },
         {
           name: "Mode",
-          value: formatGtcSessionMode(session.mode),
+          value: formatGtcSessionModeDetails(session.mode),
           inline: true,
         },
         {
@@ -212,15 +212,15 @@ export const infoCommand = createCommand({
           inline: false,
         },
         {
-          name: "Gestionnaires",
-          value: managers.length > 0 ? truncateField(managers.join("\n")) : "Aucun gestionnaire",
+          name: "Administrateurs et organisateurs",
+          value: managers.length > 0 ? truncateField(managers.join("\n")) : "Aucun administrateur ou organisateur configuré",
           inline: false,
         },
         {
           name: "Activité",
           value: [
-            `Participants: ${session._count.participations}`,
-            `Points attribués: ${session._count.pointAwards}`,
+            `Participants : ${session._count.participations}`,
+            `Points attribués : ${session._count.pointAwards}`,
             `Messages envoyés : ${session._count.originalMessages}`,
           ].join("\n"),
           inline: false,

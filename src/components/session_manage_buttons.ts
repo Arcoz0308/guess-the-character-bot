@@ -13,7 +13,7 @@ import {
 import { type InteractionReplyOptions, MessageFlags } from "discord.js";
 import { GtcSessionMode, GtcSessionStatus } from "../../generated/prisma/enums";
 import { findActiveSessionConflict, isSessionAdmin } from "../commands/session/helpers";
-import { formatGtcSessionMode, formatGtcSessionStatus } from "../utils/gtc_helpers";
+import { formatGtcSessionManagerRole, formatGtcSessionModeDetails, formatGtcSessionStatus } from "../utils/gtc_helpers";
 import { sessionManagerModal } from "./session_manager_modal";
 
 const sessionManageButtonMatcher = "button:sessionManage";
@@ -38,11 +38,11 @@ function actionLabel(action: ManageAction) {
     case "end":
       return "Terminer";
     case "add_manager":
-      return "Ajouter manager";
+      return "Ajouter";
     case "refresh":
       return "Actualiser";
     case "remove_manager":
-      return "Retirer manager";
+      return "Retirer";
     case "start":
       return "Démarrer";
   }
@@ -162,7 +162,7 @@ export async function buildSessionManageMessage(sessionId: number, userId: strin
   const managerLines = session.managers.slice(0, 10).map((manager) => {
     const displayName = manager.user.globalName ?? manager.user.username;
 
-    return `- <@${manager.userId}> (${displayName}) - ${manager.role}`;
+    return `- <@${manager.userId}> (${displayName}) - ${formatGtcSessionManagerRole(manager.role)}`;
   });
 
   return {
@@ -183,9 +183,9 @@ export async function buildSessionManageMessage(sessionId: number, userId: strin
             components: [
               textInSection(buildTextDisplay({
                 content: [
-                  `**Statut**: ${formatGtcSessionStatus(session.status)}`,
-                  `**Mode**: ${formatGtcSessionMode(session.mode)}`,
-                  `**Serveur organisateur**: ${session.organizerGuild.name}`,
+                  `**Statut** : ${formatGtcSessionStatus(session.status)}`,
+                  `**Mode** : ${formatGtcSessionModeDetails(session.mode)}`,
+                  `**Serveur organisateur** : ${session.organizerGuild.name}`,
                 ].join("\n"),
               }) as TextDisplay),
             ],
@@ -193,33 +193,33 @@ export async function buildSessionManageMessage(sessionId: number, userId: strin
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              `**Démarrage**: ${formatDate(session.startedAt)}`,
-              `**Fin**: ${formatDate(session.endedAt)}`,
-              `**Points**: ${session.pointsEnabled ? `${session.pointsPerAward} par attribution` : "Désactivés"}`,
+              `**Démarrage** : ${formatDate(session.startedAt)}`,
+              `**Fin** : ${formatDate(session.endedAt)}`,
+              `**Points** : ${session.pointsEnabled ? `${session.pointsPerAward} par attribution` : "Désactivés"}`,
             ].join("\n"),
           }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              `**${serverTitle}**: ${servers.length}`,
+              `**${serverTitle}** : ${servers.length}`,
               servers.slice(0, 8).map(server => `- ${server}`).join("\n"),
               servers.length > 8 ? `- +${servers.length - 8} autre(s)` : "",
             ].filter(Boolean).join("\n"),
           }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              `**Participants**: ${session._count.participations}`,
-              `**Scores**: ${session._count.scores}`,
-              `**Points attribués**: ${session._count.pointAwards}`,
-              `**Messages originaux**: ${session._count.originalMessages}`,
-              `**Invitations actives**: ${activeInvites.length}`,
-              `**Gestionnaires**: ${session.managers.length}`,
+              `**Participants** : ${session._count.participations}`,
+              `**Scores** : ${session._count.scores}`,
+              `**Points attribués** : ${session._count.pointAwards}`,
+              `**Messages originaux** : ${session._count.originalMessages}`,
+              `**Invitations actives** : ${activeInvites.length}`,
+              `**Administrateurs et organisateurs** : ${session.managers.length}`,
             ].join("\n"),
           }) as ComponentInContainer),
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              "**Gestionnaires**",
-              managerLines.length > 0 ? managerLines.join("\n") : "Aucun gestionnaire",
+              "**Administrateurs et organisateurs**",
+              managerLines.length > 0 ? managerLines.join("\n") : "Aucun administrateur ou organisateur configuré",
               session.managers.length > managerLines.length ? `- +${session.managers.length - managerLines.length} autre(s)` : "",
             ].filter(Boolean).join("\n"),
           }) as ComponentInContainer),
@@ -253,7 +253,7 @@ async function startSession(sessionId: number) {
   for (const guildId of guildIds) {
     const conflict = await findActiveSessionConflict(guildId, session.id);
     if (conflict) {
-      return `Impossible de démarrer: un serveur participe déjà à la session active **${conflict.name}** (#${conflict.id}).`;
+      return `Impossible de démarrer : un serveur participe déjà à la session active **${conflict.name}** (#${conflict.id}).`;
     }
   }
 
@@ -335,7 +335,7 @@ export const sessionManageButton = createButton({
       return ctx.reply("Seule la personne qui a ouvert ce panneau peut utiliser ces boutons.", { ephemeral: true });
     }
     if (!(await isSessionAdmin(parsedSessionId, ctx.user.id))) {
-      return ctx.reply("Seul un admin de cette session peut utiliser ce panneau.", { ephemeral: true });
+      return ctx.reply("Seul un administrateur de cette session peut utiliser ce panneau.", { ephemeral: true });
     }
 
     let notice: string | undefined;

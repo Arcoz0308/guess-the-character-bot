@@ -68,7 +68,7 @@ export const joinCommand = createCommand({
       const activeConflict = await findActiveSessionConflict(guild.id, invite.sessionId);
       if (activeConflict) {
         return ctx.reply(
-          `Ce serveur participe déjà à une session active: **${activeConflict.name}** (#${activeConflict.id}). Termine ou quitte cette session avant d'en rejoindre une autre active.`,
+          `Ce serveur participe déjà à une session active : **${activeConflict.name}** (#${activeConflict.id}). Termine ou quitte cette session avant d'en rejoindre une autre active.`,
           { ephemeral: true },
         );
       }
@@ -89,7 +89,7 @@ export const joinCommand = createCommand({
     const embed = new EmbedBuilder()
       .setColor(0xF1C40F)
       .setTitle("Confirmer la participation")
-      .setDescription(`Tu es sur le point d'ajouter **${guild.name}** à la session **${invite.session.name}**.`)
+      .setDescription(`Le serveur **${guild.name}** va être ajouté à la session **${invite.session.name}**.`)
       .addFields(
         {
           name: "Session",
@@ -110,9 +110,9 @@ export const joinCommand = createCommand({
           name: "Mentions de rôle",
           value: [
             "Les messages envoyés depuis un serveur participant sont relayés par webhook sans traduction de ping.",
-            "Les messages du serveur organisateur envoyés par un admin/organisateur de session peuvent ping le rôle GTC configuré.",
-            "Seul le rôle défini dans les paramètres du serveur peut être ping par le relais.",
-            "Si aucun rôle GTC n'est configuré sur ce serveur, aucun ping de rôle ne sera autorisé ici.",
+            "Les messages du serveur organisateur envoyés par un administrateur ou un organisateur de session peuvent notifier le rôle GTC configuré.",
+            "Seul le rôle défini dans les paramètres du serveur peut être notifié par le relais.",
+            "Si aucun rôle GTC n'est configuré sur ce serveur, aucune notification de rôle ne sera autorisée ici.",
           ].join("\n"),
           inline: false,
         },

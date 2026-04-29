@@ -53,7 +53,7 @@ async function getBotChannelPermissionIssue(guild: Guild, channelId: string, req
     return "Le bot doit pouvoir envoyer des messages dans le salon sélectionné.";
   }
   if (requireWebhook && !permissions.has("ManageWebhooks")) {
-    return "Le bot doit avoir la permission de gérer les webhooks dans le salon sélectionné.";
+    return "Le bot doit pouvoir gérer les webhooks dans le salon sélectionné.";
   }
 
   return undefined;
@@ -77,10 +77,10 @@ function readStringValue(value: ModalContextValue | undefined) {
 
 function buildSettingsButton(action: string, guildId: string, userId: string) {
   const label = {
-    create_webhook: "🔗 Créer webhook",
-    refresh: "🔄 Actualiser",
-    set_webhook: "✏️ URL webhook",
-    toggle_deletion: "🗑️ Suppression orga",
+    create_webhook: "Créer le webhook",
+    refresh: "Actualiser",
+    set_webhook: "Configurer l'URL",
+    toggle_deletion: "Suppression organisateur",
   }[action as SettingsAction];
   const style = action === "toggle_deletion" ? "secondary" : "primary";
 
@@ -128,16 +128,16 @@ export async function buildSettingsPanel(guild: { id: string; name: string }, us
         components: [
           inContainer(buildTextDisplay({
             content: [
-              "## ⚙️ Paramètres GTC",
-              `**Serveur**: ${guild.name}`,
+              "## Paramètres GTC",
+              `**Serveur** : ${guild.name}`,
               notice ? `\n${notice}` : "",
             ].join("\n"),
           }) as ComponentInContainer),
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              "## 📢 **Salon GTC**",
-              guildSettings.channelId ? `### <#${guildSettings.channelId}>` : "# Non configuré",
+              "## Salon GTC",
+              guildSettings.channelId ? `### <#${guildSettings.channelId}>` : "### Non configuré",
             ].join("\n"),
           }) as ComponentInContainer),
           inContainer(buildChannelSelectMenu({
@@ -145,12 +145,12 @@ export async function buildSettingsPanel(guild: { id: string; name: string }, us
             customId: `${settingsChannelMatcher}:${guild.id}:${userId}`,
             maxValues: 1,
             minValues: 1,
-            placeholder: "Choisir le salon GTC",
+            placeholder: "Sélectionner le salon GTC",
           }) as ComponentInContainer),
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              "## 🔗 **Webhook**",
+              "## Webhook de relais",
               `### ${settingValue(guildSettings.webhookUrl)}`,
             ].join("\n"),
           }) as ComponentInContainer),
@@ -161,7 +161,7 @@ export async function buildSettingsPanel(guild: { id: string; name: string }, us
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              "## 🔔 **Rôle ping GTC**",
+              "## Rôle de notification GTC",
               guildSettings.pingRoleId ? `### <@&${guildSettings.pingRoleId}>` : "### Non configuré",
             ].join("\n"),
           }) as ComponentInContainer),
@@ -169,12 +169,12 @@ export async function buildSettingsPanel(guild: { id: string; name: string }, us
             customId: `${settingsRoleMatcher}:${guild.id}:${userId}`,
             maxValues: 1,
             minValues: 1,
-            placeholder: "Choisir le rôle ping GTC",
+            placeholder: "Sélectionner le rôle GTC",
           }) as ComponentInContainer),
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
             content: [
-              "## 🗑️ **Suppression depuis le serveur organisateur**",
+              "## Suppression depuis le serveur organisateur",
               guildSettings.allowOrganizerDeletion ? "### Activée" : "### Désactivée",
             ].join("\n"),
           }) as ComponentInContainer),
@@ -281,17 +281,17 @@ export const settingsRoleSelect = createSelectMenu({
     });
     await logSettingChange(guild.id, ctx.user.id, "pingRoleId", oldGuild.pingRoleId, role.id);
 
-    return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Rôle ping GTC mis à jour."));
+    return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Rôle de notification GTC mis à jour."));
   },
 });
 
 export const settingsWebhookModal = createModal({
   matcher: settingsWebhookModalMatcher,
   build: (guildId, userId) => buildModal(
-    "Configurer le webhook",
+    "Configurer le webhook de relais",
     `${settingsWebhookModalMatcher}:${guildId}:${userId}`,
     buildLabel({
-      label: "URL webhook",
+      label: "URL du webhook",
       component: buildTextInput({
         customId: "webhookUrl",
         placeholder: "https://discord.com/api/webhooks/...",
@@ -314,7 +314,7 @@ export const settingsWebhookModal = createModal({
 
     const webhookUrl = readStringValue(ctx.values.get("webhookUrl"))?.trim();
     if (!webhookUrl || !isValidWebhookUrl(webhookUrl)) {
-      return ctx.reply("URL webhook invalide.", { ephemeral: true });
+      return ctx.reply("URL du webhook invalide.", { ephemeral: true });
     }
 
     await upsertDiscordUser(ctx.user);
@@ -329,7 +329,7 @@ export const settingsWebhookModal = createModal({
     });
     await logSettingChange(guild.id, ctx.user.id, "webhookUrl", oldGuild.webhookUrl, webhookUrl);
 
-    return ctx.reply("URL webhook mise à jour.", { ephemeral: true });
+    return ctx.reply("URL du webhook mise à jour.", { ephemeral: true });
   },
 });
 
@@ -370,7 +370,7 @@ export const settingsButton = createButton({
       });
       await logSettingChange(guild.id, ctx.user.id, "allowOrganizerDeletion", oldGuild.allowOrganizerDeletion, newValue);
 
-      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Suppression organisateur ${newValue ? "activée" : "désactivée"}.`));
+      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Suppression depuis le serveur organisateur ${newValue ? "activée" : "désactivée"}.`));
     }
 
     if (action === "create_webhook") {
@@ -390,7 +390,7 @@ export const settingsButton = createButton({
         return ctx.reply("Le salon GTC configuré est introuvable ou n'est pas textuel.", { ephemeral: true });
       }
       const webhook = await channel.createWebhook({
-        name: "GTC Relay",
+        name: "Relais GTC",
         reason: `Configuration GTC par ${ctx.user.tag}`,
       });
       await prisma.guild.update({

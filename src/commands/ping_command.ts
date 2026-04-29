@@ -4,10 +4,10 @@ export const pingCommand = createCommand({
   build: {
     slash: {
       name: "ping",
-      description: "contrôle si le bot réponds !",
+      description: "Vérifier si le bot répond",
     },
   },
   run: (ctx) => {
-    return ctx.reply("Pong!", { ephemeral: true });
+    return ctx.reply("Pong !", { ephemeral: true });
   },
 });

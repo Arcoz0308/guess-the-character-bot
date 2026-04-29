@@ -128,10 +128,27 @@ export function discordGuildName(guild: Guild) {
 
 export function formatGtcSessionMode(mode: GtcSessionMode) {
   if (mode === PrismaGtcSessionMode.INTER_GUILD) {
+    return "Interserveur";
+  }
+
+  return "Serveur seul";
+}
+
+export function formatGtcSessionModeDetails(mode: GtcSessionMode) {
+  if (mode === PrismaGtcSessionMode.INTER_GUILD) {
     return "Interserveur - relais entre plusieurs serveurs";
   }
 
   return "Serveur seul - session locale sans relais";
+}
+
+export function formatGtcSessionManagerRole(role: GtcSessionManagerRole) {
+  switch (role) {
+    case GtcSessionManagerRole.ADMIN:
+      return "Administrateur";
+    case GtcSessionManagerRole.ORGANIZER:
+      return "Organisateur";
+  }
 }
 
 export function formatGtcSessionStatus(status: GtcSessionStatus) {

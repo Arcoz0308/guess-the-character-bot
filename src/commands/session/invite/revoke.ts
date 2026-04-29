@@ -33,7 +33,7 @@ export const revokeCommand = createCommand({
       return ctx.reply("Invitation introuvable depuis ce serveur organisateur.", { ephemeral: true });
     }
     if (!(await isSessionAdmin(invite.sessionId, ctx.user.id))) {
-      return ctx.reply("Seul un admin de cette session peut révoquer une invitation.", { ephemeral: true });
+      return ctx.reply("Seul un administrateur de cette session peut révoquer une invitation.", { ephemeral: true });
     }
     if (invite.revokedAt) {
       return ctx.reply("Cette invitation est déjà révoquée.", { ephemeral: true });

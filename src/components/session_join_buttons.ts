@@ -40,7 +40,7 @@ async function acceptSessionJoin(inviteId: number, guild: Guild, user: User) {
   if (invite.session.status === GtcSessionStatus.ACTIVE) {
     const activeConflict = await findActiveSessionConflict(guild.id, invite.sessionId);
     if (activeConflict) {
-      return `Ce serveur participe déjà à une session active: ${activeConflict.name} (#${activeConflict.id}).`;
+      return `Ce serveur participe déjà à une session active : ${activeConflict.name} (#${activeConflict.id}).`;
     }
   }
 

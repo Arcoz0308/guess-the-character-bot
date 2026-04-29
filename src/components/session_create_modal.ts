@@ -2,7 +2,7 @@ import { prisma } from "#/prisma/prisma";
 import { buildLabel, buildModal, buildRadioGroup, buildTextInput, createModal, type ModalContextValue } from "arcscord";
 import { EmbedBuilder } from "discord.js";
 import { GtcSessionManagerRole, GtcSessionMode, GtcSessionStatus } from "../../generated/prisma/enums";
-import { formatGtcSessionMode, upsertDiscordUser } from "../utils/gtc_helpers";
+import { formatGtcSessionModeDetails, upsertDiscordUser } from "../utils/gtc_helpers";
 
 const sessionCreateModalMatcher = "modal:sessionCreate";
 
@@ -157,7 +157,7 @@ export const sessionCreateModal = createModal({
         },
         {
           name: "Mode",
-          value: formatGtcSessionMode(session.mode),
+          value: formatGtcSessionModeDetails(session.mode),
           inline: true,
         },
         {
@@ -171,7 +171,7 @@ export const sessionCreateModal = createModal({
           inline: false,
         },
       )
-      .setFooter({ text: "Statut: planifiée" })
+      .setFooter({ text: "Statut : planifiée" })
       .setTimestamp();
 
     return ctx.reply({ embeds: [embed], ephemeral: true });

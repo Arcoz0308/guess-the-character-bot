@@ -104,7 +104,7 @@ export const listCommand = createCommand({
       return [
         `**#${session.id} - ${session.name}**`,
         `${formatGtcSessionStatus(session.status)} | ${formatShortSessionMode(session.mode)} | ${session.organizerGuild.name}`,
-        `Participants: ${session._count.participations} | Points attribués: ${session._count.pointAwards}`,
+        `Participants : ${session._count.participations} | Points attribués : ${session._count.pointAwards}`,
       ].join("\n");
     });
 

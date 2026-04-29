@@ -41,12 +41,12 @@ export const message_infoCommand = createCommand({
 
     return ctx.reply({
       content: [
-        "**Information du message**",
-        `Session: ${originalMessage.session?.name ?? originalMessage.sessionId ?? missingInfo()}`,
-        `Serveur: ${originalMessage.guildName} (${originalMessage.guildId})`,
-        `Salon: <#${originalMessage.channelId}>`,
-        `Auteur: ${originalMessage.author.username} (${originalMessage.authorId})`,
-        `Lien: ${messageUrl(originalMessage.guildId, originalMessage.channelId, originalMessage.id)}`,
+        "**Informations du message**",
+        `Session : ${originalMessage.session?.name ?? originalMessage.sessionId ?? missingInfo()}`,
+        `Serveur : ${originalMessage.guildName} (${originalMessage.guildId})`,
+        `Salon : <#${originalMessage.channelId}>`,
+        `Auteur : ${originalMessage.author.username} (${originalMessage.authorId})`,
+        `Lien : ${messageUrl(originalMessage.guildId, originalMessage.channelId, originalMessage.id)}`,
       ].join("\n"),
       ephemeral: true,
     });

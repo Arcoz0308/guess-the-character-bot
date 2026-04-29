@@ -56,7 +56,7 @@ export const createSubGroupCommand = createCommand({
       return ctx.reply("Les invitations sont disponibles uniquement pour les sessions interserveur.", { ephemeral: true });
     }
     if (!(await isSessionAdmin(session.id, ctx.user.id))) {
-      return ctx.reply("Seul un admin de cette session peut créer une invitation.", { ephemeral: true });
+      return ctx.reply("Seul un administrateur de cette session peut créer une invitation.", { ephemeral: true });
     }
 
     await upsertDiscordUser(ctx.user);

@@ -88,7 +88,7 @@ export const removeCommand = createCommand({
       return ctx.reply("Session introuvable depuis ce serveur organisateur.", { ephemeral: true });
     }
     if (!(await isSessionAdmin(session.id, ctx.user.id))) {
-      return ctx.reply("Seul un admin de cette session peut retirer un serveur.", { ephemeral: true });
+      return ctx.reply("Seul un administrateur de cette session peut retirer un serveur.", { ephemeral: true });
     }
     if (ctx.options.serveur === session.organizerGuildId) {
       return ctx.reply("Le serveur organisateur ne peut pas être retiré.", { ephemeral: true });

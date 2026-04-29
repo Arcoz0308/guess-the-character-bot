@@ -27,7 +27,7 @@ export const manageCommand = createCommand({
       return ctx.reply("La session sélectionnée est invalide.", { ephemeral: true });
     }
     if (!(await isSessionAdmin(sessionId, ctx.user.id))) {
-      return ctx.reply("Seul un admin de cette session peut ouvrir le panneau de gestion.", { ephemeral: true });
+      return ctx.reply("Seul un administrateur de cette session peut ouvrir le panneau de gestion.", { ephemeral: true });
     }
 
     return ctx.reply(await buildSessionManageMessage(sessionId, ctx.user.id), { ephemeral: true });

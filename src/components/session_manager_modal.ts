@@ -9,7 +9,7 @@ import {
 } from "arcscord";
 import { GtcSessionManagerRole } from "../../generated/prisma/enums";
 import { isSessionAdmin } from "../commands/session/helpers";
-import { upsertDiscordUser } from "../utils/gtc_helpers";
+import { formatGtcSessionManagerRole, upsertDiscordUser } from "../utils/gtc_helpers";
 
 const sessionManagerModalMatcher = "modal:sessionManager";
 
@@ -40,7 +40,7 @@ async function assertCanManage(sessionId: number, requesterId: string, ownerId: 
   }
 
   if (!(await isSessionAdmin(sessionId, requesterId))) {
-    return "Seul un admin de cette session peut gérer les managers.";
+    return "Seul un administrateur de cette session peut gérer les administrateurs et organisateurs.";
   }
 
   return undefined;
@@ -49,7 +49,7 @@ async function assertCanManage(sessionId: number, requesterId: string, ownerId: 
 export const sessionManagerModal = createModal({
   matcher: sessionManagerModalMatcher,
   build: (action, sessionId, userId) => buildModal(
-    action === "add" ? "Ajouter un manager" : "Retirer un manager",
+    action === "add" ? "Ajouter un administrateur ou organisateur" : "Retirer un administrateur ou organisateur",
     `${sessionManagerModalMatcher}:${action}:${sessionId}:${userId}`,
     buildLabel({
       label: "Utilisateur",
@@ -68,14 +68,14 @@ export const sessionManagerModal = createModal({
               customId: "managerRole",
               options: [
                 {
-                  label: "Admin",
+                  label: "Administrateur",
                   value: GtcSessionManagerRole.ADMIN,
-                  description: "Peut gérer la session et ses managers.",
+                  description: "Peut gérer la session, les administrateurs et les organisateurs.",
                 },
                 {
                   label: "Organisateur",
                   value: GtcSessionManagerRole.ORGANIZER,
-                  description: "Peut envoyer les messages organisateur relayés par le bot.",
+                  description: "Peut envoyer les messages du serveur organisateur relayés par le bot.",
                   default: true,
                 },
               ],
@@ -127,7 +127,7 @@ export const sessionManagerModal = createModal({
         },
       });
 
-      return ctx.reply(`<@${selectedUserId}> a été ajouté comme ${role}.`, { ephemeral: true });
+      return ctx.reply(`<@${selectedUserId}> a été ajouté comme ${formatGtcSessionManagerRole(role)}.`, { ephemeral: true });
     }
 
     if (action === "remove") {
@@ -138,7 +138,7 @@ export const sessionManagerModal = createModal({
         },
       });
       if (targetRoles.length === 0) {
-        return ctx.reply("Cet utilisateur n'est pas manager de cette session.", { ephemeral: true });
+        return ctx.reply("Cet utilisateur n'est ni administrateur ni organisateur de cette session.", { ephemeral: true });
       }
 
       const removesAdmin = targetRoles.some(manager => manager.role === GtcSessionManagerRole.ADMIN);
@@ -150,7 +150,7 @@ export const sessionManagerModal = createModal({
           },
         });
         if (adminCount <= 1) {
-          return ctx.reply("Impossible de retirer le dernier admin de la session.", { ephemeral: true });
+          return ctx.reply("Impossible de retirer le dernier administrateur de la session.", { ephemeral: true });
         }
       }
 
@@ -161,7 +161,7 @@ export const sessionManagerModal = createModal({
         },
       });
 
-      return ctx.reply(`<@${selectedUserId}> n'est plus manager de cette session.`, { ephemeral: true });
+      return ctx.reply(`<@${selectedUserId}> n'est plus administrateur ni organisateur de cette session.`, { ephemeral: true });
     }
 
     return ctx.reply("Action inconnue.", { ephemeral: true });

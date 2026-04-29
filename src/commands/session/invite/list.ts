@@ -65,7 +65,7 @@ export const inviteListCommand = createCommand({
       return ctx.reply("Session introuvable depuis ce serveur organisateur.", { ephemeral: true });
     }
     if (!(await isSessionAdmin(session.id, ctx.user.id))) {
-      return ctx.reply("Seul un admin de cette session peut lister les invitations.", { ephemeral: true });
+      return ctx.reply("Seul un administrateur de cette session peut lister les invitations.", { ephemeral: true });
     }
     if (session.invites.length === 0) {
       return ctx.reply("Aucune invitation n'a été créée pour cette session.", { ephemeral: true });
