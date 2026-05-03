@@ -151,7 +151,7 @@ export async function buildSettingsPanel(guild: { id: string; name: string }, us
           inContainer(buildTextDisplay({
             content: [
               "## Webhook de relais",
-              `### ${settingValue(guildSettings.webhookUrl)}`,
+              `### ||${settingValue(guildSettings.webhookUrl)}||`,
             ].join("\n"),
           }) as ComponentInContainer),
           inContainer(buildButtonActionRow(
