@@ -28,12 +28,4 @@ client.on("error", (error) => {
   client.logger.error(`Discord client error: ${error.message}`);
 });
 
-process.on("unhandledRejection", (reason) => {
-  client.logger.error(`Unhandled rejection: ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}`);
-});
-
-process.on("uncaughtException", (error) => {
-  client.logger.error(`Uncaught exception: ${error.stack ?? error.message}`);
-});
-
 void client.login();
