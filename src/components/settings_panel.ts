@@ -25,7 +25,7 @@ const settingsChannelMatcher = "select:settingsChannel";
 const settingsRoleMatcher = "select:settingsRole";
 const settingsWebhookModalMatcher = "modal:settingsWebhook";
 
-type SettingsAction = "refresh" | "create_webhook" | "set_webhook" | "toggle_deletion" | "verify_webhook";
+type SettingsAction = "refresh" | "create_webhook" | "set_webhook" | "toggle_deletion";
 type SettingsMessage = Pick<InteractionReplyOptions, "components" | "content"> & {
   flags?: MessageFlags.IsComponentsV2;
 };
@@ -122,7 +122,6 @@ function buildSettingsButton(action: string, guildId: string, userId: string) {
     refresh: "Actualiser",
     set_webhook: "Configurer manuellement",
     toggle_deletion: "Suppression organisateur",
-    verify_webhook: "Vérifier webhook",
   }[action as SettingsAction];
   const style = action === "toggle_deletion" ? "secondary" : "primary";
 
@@ -204,7 +203,6 @@ export async function buildSettingsPanel(guild: { id: string; name: string }, us
           inContainer(buildButtonActionRow(
             buildSettingsButton("create_webhook", guild.id, userId),
             buildSettingsButton("set_webhook", guild.id, userId),
-            buildSettingsButton("verify_webhook", guild.id, userId),
           )),
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
@@ -419,38 +417,6 @@ export const settingsButton = createButton({
       await logSettingChange(guild.id, ctx.user.id, "allowOrganizerDeletion", oldGuild.allowOrganizerDeletion, newValue);
 
       return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Suppression depuis le serveur organisateur ${newValue ? "activée" : "désactivée"}.`, ctx.client));
-    }
-
-    if (action === "verify_webhook") {
-      const guildSettings = await upsertGuild(guild);
-      if (!guildSettings.channelId) {
-        return ctx.reply("Configure d'abord le salon GTC.", { ephemeral: true });
-      }
-      if (!guildSettings.webhookUrl) {
-        return ctx.reply("Aucun webhook n'est configuré.", { ephemeral: true });
-      }
-
-      try {
-        const parsedWebhook = parseWebhookUrl(guildSettings.webhookUrl);
-        if (!parsedWebhook) {
-          return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "URL du webhook invalide.", ctx.client));
-        }
-
-        const webhook = await ctx.client.fetchWebhook(parsedWebhook.id, parsedWebhook.token);
-        if (webhook.channelId !== guildSettings.channelId) {
-          return ctx.updateMessage(await buildSettingsPanel(
-            guild,
-            ownerId,
-            `Webhook valide, mais lié à <#${webhook.channelId}> au lieu de <#${guildSettings.channelId}>.`,
-            ctx.client,
-          ));
-        }
-
-        return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Webhook valide pour <#${guildSettings.channelId}>.`, ctx.client));
-      }
-      catch {
-        return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Webhook invalide, inaccessible ou révoqué.", ctx.client));
-      }
     }
 
     if (action === "create_webhook") {
