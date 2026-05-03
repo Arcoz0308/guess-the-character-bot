@@ -76,17 +76,6 @@ export const messageCreateEvent = createEvent({
         guildName: discordGuildName(message.guild),
         channelId: message.channel.id,
         authorId: message.author.id,
-        content: message.content,
-        attachments: message.attachments.map(attachment => ({
-          contentType: attachment.contentType,
-          id: attachment.id,
-          name: attachment.name,
-          size: attachment.size,
-          url: attachment.url,
-        })),
-        embeds: JSON.parse(JSON.stringify({
-          items: message.embeds.map(embed => embed.toJSON()),
-        })),
         sentAt: message.createdAt,
       },
     });

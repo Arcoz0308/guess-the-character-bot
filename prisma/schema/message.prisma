@@ -5,9 +5,6 @@ model OriginalMessage {
   guildName   String
   channelId   String
   authorId    String
-  content     String    @db.Text
-  attachments Json?
-  embeds      Json?
   sentAt      DateTime
   editedAt    DateTime?
   deletedAt   DateTime?

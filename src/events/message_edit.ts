@@ -74,7 +74,6 @@ export const messageEditEvent = createEvent({
         id: message.id,
       },
       data: {
-        content: message.content,
         editedAt: message.editedAt ?? new Date(),
       },
     });

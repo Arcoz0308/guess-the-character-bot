@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "A discord bot made with arcscord",
   "engines": {
-    "node": ">=23.0.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
-    "start": "npx prisma generate && node -r @swc-node/register -r tsconfig-paths/register src/index.ts",
+    "build": "prisma generate",
+    "start": "node -r @swc-node/register -r tsconfig-paths/register src/index.ts",
+    "db:setup": "prisma db push && prisma generate",
+    "db:push": "prisma db push",
+    "db:push:force": "prisma db push --accept-data-loss",
     "dev": "npx nodemon --exec node -r @swc-node/register -r tsconfig-paths/register src/index.ts dev debug",
     "lint": "eslint .",
     "lint:fix": "eslint --fix ."
