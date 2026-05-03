@@ -3,14 +3,15 @@ import { createEvent } from "arcscord";
 import { ChannelType, WebhookClient } from "discord.js";
 import { GtcSessionMode, MessageDeliveryKind } from "../../generated/prisma/enums";
 import {
+  botRelayAllowedMentions,
   canSendManagedSessionMessage,
   discordGuildName,
   findActiveSessionForGuild,
   getRelayTargetGuilds,
   getSessionGuildConfig,
-  relayAllowedMentions,
   translatePingRole,
   upsertDiscordUser,
+  webhookRelayAllowedMentions,
 } from "../utils/gtc_helpers";
 
 export const messageCreateEvent = createEvent({
@@ -94,7 +95,7 @@ export const messageCreateEvent = createEvent({
 
         const webhookClient = new WebhookClient({ url: targetGuildConfig.webhookUrl });
         const deliveredMessage = await webhookClient.send({
-          allowedMentions: relayAllowedMentions(targetGuildConfig),
+          allowedMentions: webhookRelayAllowedMentions(),
           avatarURL: message.author.avatarURL() || undefined,
           content,
           files,
@@ -123,7 +124,7 @@ export const messageCreateEvent = createEvent({
       }
 
       const deliveredMessage = await channel.send({
-        allowedMentions: relayAllowedMentions(targetGuildConfig),
+        allowedMentions: botRelayAllowedMentions(targetGuildConfig),
         content,
         files,
       });

@@ -111,10 +111,17 @@ export async function canSendManagedSessionMessage(sessionId: number, userId: st
   return manager !== null;
 }
 
-export function relayAllowedMentions(guild: { pingRoleId: string | null }) {
+export function botRelayAllowedMentions(guild: { pingRoleId: string | null }) {
   return {
     parse: ["users"] as const,
     roles: guild.pingRoleId ? [guild.pingRoleId] : [],
+  };
+}
+
+export function webhookRelayAllowedMentions() {
+  return {
+    parse: ["users"] as const,
+    roles: [],
   };
 }
 

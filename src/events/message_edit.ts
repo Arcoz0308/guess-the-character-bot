@@ -3,10 +3,10 @@ import { createEvent } from "arcscord";
 import { ChannelType } from "discord.js";
 import { GtcSessionMode, MessageDeliveryKind } from "../../generated/prisma/enums";
 import {
+  botRelayAllowedMentions,
   canSendManagedSessionMessage,
   findActiveSessionForGuild,
   getSessionGuildConfig,
-  relayAllowedMentions,
   translatePingRole,
 } from "../utils/gtc_helpers";
 
@@ -94,7 +94,7 @@ export const messageEditEvent = createEvent({
 
       const messageToEdit = await channel.messages.fetch(deliveredMessage.id);
       await messageToEdit.edit({
-        allowedMentions: relayAllowedMentions(deliveredMessage.targetGuild),
+        allowedMentions: botRelayAllowedMentions(deliveredMessage.targetGuild),
         content,
       });
     }
