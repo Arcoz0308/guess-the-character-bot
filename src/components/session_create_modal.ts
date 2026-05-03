@@ -104,12 +104,10 @@ export const sessionCreateModal = createModal({
           id: guild.id,
         },
         update: {
-          isOrganizerGuild: mode === GtcSessionMode.INTER_GUILD ? true : undefined,
           name: guild.name,
         },
         create: {
           id: guild.id,
-          isOrganizerGuild: mode === GtcSessionMode.INTER_GUILD,
           name: guild.name,
         },
       });

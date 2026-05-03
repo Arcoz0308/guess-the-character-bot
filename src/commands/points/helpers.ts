@@ -2,8 +2,8 @@ import type { AutocompleteContext } from "arcscord";
 import type { Guild, Message, User } from "discord.js";
 import { prisma } from "#/prisma/prisma";
 import { EmbedBuilder } from "discord.js";
-import { GtcSessionManagerRole, GtcSessionStatus, PointAwardStatus } from "../../../generated/prisma/enums";
-import { findActiveSessionForGuild, formatGtcSessionStatus, upsertDiscordUser } from "../../utils/gtc_helpers";
+import { PointAwardStatus } from "../../../generated/prisma/enums";
+import { canManageSession, findActiveSessionForGuild, formatGtcSessionStatus, upsertDiscordUser } from "../../utils/gtc_helpers";
 
 export const awardsHistoryLimit = 10;
 export const leaderboardLimit = 10;
@@ -20,19 +20,7 @@ export function formatPoints(points: number) {
   return `${points} point${Math.abs(points) > 1 ? "s" : ""}`;
 }
 
-export async function canManageSessionPoints(sessionId: number, userId: string) {
-  const manager = await prisma.gtcSessionManager.findFirst({
-    where: {
-      sessionId,
-      userId,
-      role: {
-        in: [GtcSessionManagerRole.ADMIN, GtcSessionManagerRole.ORGANIZER],
-      },
-    },
-  });
-
-  return manager !== null;
-}
+export const canManageSessionPoints = canManageSession;
 
 export async function findVisibleSessionForGuild(sessionId: number, guildId: string) {
   return prisma.gtcSession.findFirst({
@@ -70,7 +58,7 @@ export async function resolveActivePointSession(guild: Guild) {
   return session;
 }
 
-export async function sendVisibleSessionAutocomplete(ctx: AutocompleteContext, includeActive = true) {
+export async function sendVisibleSessionAutocomplete(ctx: AutocompleteContext) {
   const guildId = ctx.guildId;
   if (!guildId) {
     return ctx.sendChoices([]);
@@ -81,13 +69,6 @@ export async function sendVisibleSessionAutocomplete(ctx: AutocompleteContext, i
   const sessions = await prisma.gtcSession.findMany({
     where: {
       AND: [
-        {
-          status: includeActive
-            ? undefined
-            : {
-                not: GtcSessionStatus.ACTIVE,
-              },
-        },
         {
           OR: [
             {
@@ -282,21 +263,19 @@ export async function revokeAward(params: {
 
 export async function buildScoreEmbed(guildId: string, user: User) {
   const activeSession = await findActiveSessionForGuild(guildId);
-  const [currentScore, pastScores] = await prisma.$transaction([
-    activeSession
-      ? prisma.userScore.findUnique({
-          where: {
-            sessionId_userId: {
-              sessionId: activeSession.id,
-              userId: user.id,
-            },
+  const currentScorePromise = activeSession
+    ? prisma.userScore.findUnique({
+        where: {
+          sessionId_userId: {
+            sessionId: activeSession.id,
+            userId: user.id,
           },
-        })
-      : prisma.userScore.findFirst({
-          where: {
-            id: -1,
-          },
-        }),
+        },
+      })
+    : Promise.resolve(null);
+
+  const [currentScore, pastScores] = await Promise.all([
+    currentScorePromise,
     prisma.userScore.findMany({
       where: {
         userId: user.id,

@@ -97,7 +97,7 @@ export function translatePingRole(content: string, sourceGuild: { pingRoleId: st
     .replaceAll(`<@&${sourceGuild.pingRoleId}>`, `<@&${targetGuild.pingRoleId}>`);
 }
 
-export async function canSendManagedSessionMessage(sessionId: number, userId: string) {
+export async function canManageSession(sessionId: number, userId: string) {
   const manager = await prisma.gtcSessionManager.findFirst({
     where: {
       sessionId,
@@ -110,6 +110,8 @@ export async function canSendManagedSessionMessage(sessionId: number, userId: st
 
   return manager !== null;
 }
+
+export const canSendManagedSessionMessage = canManageSession;
 
 export function botRelayAllowedMentions(guild: { pingRoleId: string | null }) {
   return {

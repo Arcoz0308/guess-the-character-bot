@@ -66,8 +66,8 @@ export const messageCreateEvent = createEvent({
       return ctx.ok(true);
     }
 
-    const isOrganizerGuildMessage = session.organizerGuildId === message.guild.id;
-    const useBotRelay = isOrganizerGuildMessage && await canSendManagedSessionMessage(session.id, message.author.id);
+    const fromOrganizerGuild = session.organizerGuildId === message.guild.id;
+    const useBotRelay = fromOrganizerGuild && await canSendManagedSessionMessage(session.id, message.author.id);
 
     await prisma.originalMessage.create({
       data: {
@@ -82,6 +82,11 @@ export const messageCreateEvent = createEvent({
     });
 
     for (const targetGuildConfig of getRelayTargetGuilds(session, message.guild.id)) {
+      const targetChannelId = targetGuildConfig.channelId;
+      if (!targetChannelId) {
+        continue;
+      }
+
       const content = useBotRelay
         ? translatePingRole(message.content, sourceGuildConfig, targetGuildConfig)
         : message.content;
@@ -108,7 +113,7 @@ export const messageCreateEvent = createEvent({
             originalMessageId: message.id,
             guildId: targetGuildConfig.id,
             guildName: targetGuildConfig.name,
-            channelId: targetGuildConfig.channelId!,
+            channelId: targetChannelId,
             deliveryKind: MessageDeliveryKind.WEBHOOK,
             sentAt: new Date(),
           },
@@ -117,7 +122,7 @@ export const messageCreateEvent = createEvent({
       }
 
       const discordGuild = await ctx.client.guilds.fetch(targetGuildConfig.id);
-      const channel = discordGuild.channels.cache.get(targetGuildConfig.channelId!);
+      const channel = discordGuild.channels.cache.get(targetChannelId);
       if (!channel || channel.type !== ChannelType.GuildText) {
         ctx.client.logger.error(`Channel is not a text channel in server ${targetGuildConfig.name}`);
         continue;

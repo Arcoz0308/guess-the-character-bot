@@ -15,13 +15,32 @@ import { sessionManageButton } from "./components/session_manage_buttons";
 import { sessionManagerModal } from "./components/session_manager_modal";
 import { settingsButton, settingsChannelSelect, settingsRoleSelect, settingsWebhookModal } from "./components/settings_panel";
 import { messageCreateEvent } from "./events/message_create";
-import { message_deleteEvent } from "./events/message_delete";
+import { messageDeleteEvent } from "./events/message_delete";
 import { messageEditEvent } from "./events/message_edit";
 import { reactionAddEvent } from "./events/reaction_add";
 
 export default {
-  commands: [pingCommand, message_infoCommand, author_idCommand, sessionCommandDef, settingsCommand, leaderboardCommand, scoreCommand, pointsCommandDef, give_pointCommand],
-  components: [sessionCreateModal, sessionJoinButton, sessionManageButton, sessionManagerModal, settingsButton, settingsChannelSelect, settingsRoleSelect, settingsWebhookModal],
-  events: [reactionAddEvent, messageCreateEvent, messageEditEvent, message_deleteEvent],
+  commands: [
+    pingCommand,
+    message_infoCommand,
+    author_idCommand,
+    sessionCommandDef,
+    settingsCommand,
+    leaderboardCommand,
+    scoreCommand,
+    pointsCommandDef,
+    give_pointCommand,
+  ],
+  components: [
+    sessionCreateModal,
+    sessionJoinButton,
+    sessionManageButton,
+    sessionManagerModal,
+    settingsButton,
+    settingsChannelSelect,
+    settingsRoleSelect,
+    settingsWebhookModal,
+  ],
+  events: [reactionAddEvent, messageCreateEvent, messageEditEvent, messageDeleteEvent],
   tasks: [],
 } satisfies HandlersList;

@@ -12,6 +12,7 @@ async function findMessageDeleteExecutorId(params: {
   channelId: string;
   deletedAt: number;
   guild: Guild;
+  logWarning: (message: string) => void;
 }) {
   try {
     const auditLogs = await params.guild.fetchAuditLogs({
@@ -36,12 +37,12 @@ async function findMessageDeleteExecutorId(params: {
     return entry?.executorId ?? null;
   }
   catch (error) {
-    console.warn(`Unable to read message deletion audit logs in guild ${params.guild.id}: ${error instanceof Error ? error.message : String(error)}`);
+    params.logWarning(`Unable to read message deletion audit logs in guild ${params.guild.id}: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
 
-export const message_deleteEvent = createEvent({
+export const messageDeleteEvent = createEvent({
   event: "messageDelete",
   name: "message_delete",
   run: async (ctx, message) => {
@@ -56,6 +57,7 @@ export const message_deleteEvent = createEvent({
       include: {
         deliveredMessages: true,
         session: true,
+        sourceGuild: true,
       },
     });
 
@@ -68,6 +70,13 @@ export const message_deleteEvent = createEvent({
     if (message.guild.id !== originalMessage.session.organizerGuildId) {
       return ctx.ok(true);
     }
+    if (!originalMessage.sourceGuild.allowOrganizerDeletion) {
+      ctx.client.logger.debug(`Ignored organizer message deletion ${originalMessage.id}: organizer deletion relay is disabled.`);
+      return ctx.ok(true);
+    }
+    if (!originalMessage.sessionId) {
+      return ctx.ok(true);
+    }
 
     const deletedAt = Date.now();
     const auditExecutorId = await findMessageDeleteExecutorId({
@@ -75,15 +84,16 @@ export const message_deleteEvent = createEvent({
       channelId: originalMessage.channelId,
       deletedAt,
       guild: message.guild,
+      logWarning: message => ctx.client.logger.warning(message),
     });
-    const fallbackAuthorCanManage = await canSendManagedSessionMessage(originalMessage.sessionId!, originalMessage.authorId);
+    const fallbackAuthorCanManage = await canSendManagedSessionMessage(originalMessage.sessionId, originalMessage.authorId);
     const executorId = auditExecutorId ?? (fallbackAuthorCanManage ? originalMessage.authorId : null);
 
     if (!executorId) {
       ctx.client.logger.debug(`Ignored organizer message deletion ${originalMessage.id}: no session manager executor found.`);
       return ctx.ok(true);
     }
-    if (!(await canSendManagedSessionMessage(originalMessage.sessionId!, executorId))) {
+    if (!(await canSendManagedSessionMessage(originalMessage.sessionId, executorId))) {
       ctx.client.logger.debug(`Ignored organizer message deletion ${originalMessage.id}: executor ${executorId} is not a session manager.`);
       return ctx.ok(true);
     }
