@@ -25,17 +25,20 @@ const settingsChannelMatcher = "select:settingsChannel";
 const settingsRoleMatcher = "select:settingsRole";
 const settingsWebhookModalMatcher = "modal:settingsWebhook";
 
-type SettingsAction = "refresh" | "create_webhook" | "set_webhook" | "toggle_deletion";
+type SettingsAction = "refresh" | "create_webhook" | "set_webhook" | "toggle_deletion" | "verify_webhook";
 type SettingsMessage = Pick<InteractionReplyOptions, "components" | "content"> & {
   flags?: MessageFlags.IsComponentsV2;
 };
+interface WebhookFetcher {
+  fetchWebhook: (id: string, token?: string) => Promise<{ channelId: string | null }>;
+}
 
 function inContainer(component: ComponentInContainer) {
   return component;
 }
 
-function settingValue(value: string | null | undefined, empty = "Non configuré") {
-  return value ? `\`${value}\`` : empty;
+function secretSettingStatus(value: string | null | undefined) {
+  return value ? "Configuré" : "Non configuré";
 }
 
 async function getBotChannelPermissionIssue(guild: Guild, channelId: string, requireWebhook = false) {
@@ -63,6 +66,44 @@ function isValidWebhookUrl(value: string) {
   return /^https:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+$/u.test(value);
 }
 
+function parseWebhookUrl(value: string) {
+  const match = /^https:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/api\/webhooks\/(?<id>\d+)\/(?<token>[\w-]+)$/u.exec(value);
+  if (!match?.groups) {
+    return null;
+  }
+
+  return {
+    id: match.groups.id,
+    token: match.groups.token,
+  };
+}
+
+async function getWebhookStatusLine(guildSettings: { channelId: string | null; webhookUrl: string | null }, client: WebhookFetcher) {
+  if (!guildSettings.webhookUrl) {
+    return null;
+  }
+  if (!guildSettings.channelId) {
+    return "⚠️ Salon GTC non configuré";
+  }
+
+  const parsedWebhook = parseWebhookUrl(guildSettings.webhookUrl);
+  if (!parsedWebhook) {
+    return "⚠️ URL invalide";
+  }
+
+  try {
+    const webhook = await client.fetchWebhook(parsedWebhook.id, parsedWebhook.token);
+    if (webhook.channelId !== guildSettings.channelId) {
+      return `⚠️ Mauvais salon : lié à <#${webhook.channelId}>`;
+    }
+
+    return `Valide pour <#${guildSettings.channelId}>`;
+  }
+  catch {
+    return "⚠️ Invalide, inaccessible ou révoqué";
+  }
+}
+
 function readStringValue(value: ModalContextValue | undefined) {
   if (typeof value === "string") {
     return value;
@@ -77,10 +118,11 @@ function readStringValue(value: ModalContextValue | undefined) {
 
 function buildSettingsButton(action: string, guildId: string, userId: string) {
   const label = {
-    create_webhook: "Créer le webhook",
+    create_webhook: "Créer / régénérer",
     refresh: "Actualiser",
-    set_webhook: "Configurer l'URL",
+    set_webhook: "Configurer manuellement",
     toggle_deletion: "Suppression organisateur",
+    verify_webhook: "Vérifier webhook",
   }[action as SettingsAction];
   const style = action === "toggle_deletion" ? "secondary" : "primary";
 
@@ -107,19 +149,23 @@ async function upsertGuild(guild: { id: string; name: string }) {
 }
 
 async function logSettingChange(guildId: string, changedById: string, key: string, oldValue: unknown, newValue: unknown) {
+  const storedOldValue = key === "webhookUrl" && oldValue ? "[secret]" : oldValue;
+  const storedNewValue = key === "webhookUrl" && newValue ? "[secret]" : newValue;
+
   await prisma.guildSettingChange.create({
     data: {
       changedById,
       guildId,
       key,
-      newValue: newValue === undefined || newValue === null ? Prisma.JsonNull : newValue,
-      oldValue: oldValue === undefined || oldValue === null ? Prisma.JsonNull : oldValue,
+      newValue: storedNewValue === undefined || storedNewValue === null ? Prisma.JsonNull : storedNewValue,
+      oldValue: storedOldValue === undefined || storedOldValue === null ? Prisma.JsonNull : storedOldValue,
     },
   });
 }
 
-export async function buildSettingsPanel(guild: { id: string; name: string }, userId: string, notice?: string): Promise<SettingsMessage> {
+export async function buildSettingsPanel(guild: { id: string; name: string }, userId: string, notice?: string, client?: WebhookFetcher): Promise<SettingsMessage> {
   const guildSettings = await upsertGuild(guild);
+  const webhookStatusLine = client ? await getWebhookStatusLine(guildSettings, client) : null;
 
   return {
     components: [
@@ -151,12 +197,14 @@ export async function buildSettingsPanel(guild: { id: string; name: string }, us
           inContainer(buildTextDisplay({
             content: [
               "## Webhook de relais",
-              `### ||${settingValue(guildSettings.webhookUrl)}||`,
+              `### ${secretSettingStatus(guildSettings.webhookUrl)}`,
+              webhookStatusLine,
             ].join("\n"),
           }) as ComponentInContainer),
           inContainer(buildButtonActionRow(
             buildSettingsButton("create_webhook", guild.id, userId),
             buildSettingsButton("set_webhook", guild.id, userId),
+            buildSettingsButton("verify_webhook", guild.id, userId),
           )),
           inContainer(buildSeparator({ spacing: "small" }) as ComponentInContainer),
           inContainer(buildTextDisplay({
@@ -240,7 +288,7 @@ export const settingsChannelSelect = createSelectMenu({
     });
     await logSettingChange(guild.id, ctx.user.id, "channelId", oldGuild.channelId, channel.id);
 
-    return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Salon GTC mis à jour."));
+    return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Salon GTC mis à jour.", ctx.client));
   },
 });
 
@@ -281,7 +329,7 @@ export const settingsRoleSelect = createSelectMenu({
     });
     await logSettingChange(guild.id, ctx.user.id, "pingRoleId", oldGuild.pingRoleId, role.id);
 
-    return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Rôle de notification GTC mis à jour."));
+    return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Rôle de notification GTC mis à jour.", ctx.client));
   },
 });
 
@@ -329,7 +377,7 @@ export const settingsWebhookModal = createModal({
     });
     await logSettingChange(guild.id, ctx.user.id, "webhookUrl", oldGuild.webhookUrl, webhookUrl);
 
-    return ctx.reply("URL du webhook mise à jour.", { ephemeral: true });
+    return ctx.reply("Webhook configuré manuellement.", { ephemeral: true });
   },
 });
 
@@ -349,7 +397,7 @@ export const settingsButton = createButton({
     }
 
     if (action === "refresh") {
-      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Panneau actualisé le <t:${Math.floor(Date.now() / 1000)}:f>.`));
+      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Panneau actualisé le <t:${Math.floor(Date.now() / 1000)}:f>.`, ctx.client));
     }
 
     if (action === "set_webhook") {
@@ -370,7 +418,39 @@ export const settingsButton = createButton({
       });
       await logSettingChange(guild.id, ctx.user.id, "allowOrganizerDeletion", oldGuild.allowOrganizerDeletion, newValue);
 
-      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Suppression depuis le serveur organisateur ${newValue ? "activée" : "désactivée"}.`));
+      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Suppression depuis le serveur organisateur ${newValue ? "activée" : "désactivée"}.`, ctx.client));
+    }
+
+    if (action === "verify_webhook") {
+      const guildSettings = await upsertGuild(guild);
+      if (!guildSettings.channelId) {
+        return ctx.reply("Configure d'abord le salon GTC.", { ephemeral: true });
+      }
+      if (!guildSettings.webhookUrl) {
+        return ctx.reply("Aucun webhook n'est configuré.", { ephemeral: true });
+      }
+
+      try {
+        const parsedWebhook = parseWebhookUrl(guildSettings.webhookUrl);
+        if (!parsedWebhook) {
+          return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "URL du webhook invalide.", ctx.client));
+        }
+
+        const webhook = await ctx.client.fetchWebhook(parsedWebhook.id, parsedWebhook.token);
+        if (webhook.channelId !== guildSettings.channelId) {
+          return ctx.updateMessage(await buildSettingsPanel(
+            guild,
+            ownerId,
+            `Webhook valide, mais lié à <#${webhook.channelId}> au lieu de <#${guildSettings.channelId}>.`,
+            ctx.client,
+          ));
+        }
+
+        return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, `Webhook valide pour <#${guildSettings.channelId}>.`, ctx.client));
+      }
+      catch {
+        return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Webhook invalide, inaccessible ou révoqué.", ctx.client));
+      }
     }
 
     if (action === "create_webhook") {
@@ -403,7 +483,7 @@ export const settingsButton = createButton({
       });
       await logSettingChange(guild.id, ctx.user.id, "webhookUrl", guildSettings.webhookUrl, webhook.url);
 
-      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Webhook créé et enregistré."));
+      return ctx.updateMessage(await buildSettingsPanel(guild, ownerId, "Webhook créé ou régénéré et enregistré.", ctx.client));
     }
 
     return ctx.reply("Action inconnue.", { ephemeral: true });

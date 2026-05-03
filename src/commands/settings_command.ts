@@ -16,6 +16,6 @@ export const settingsCommand = createCommand({
       return ctx.reply("Cette commande doit être utilisée dans un serveur.", { ephemeral: true });
     }
 
-    return ctx.reply(await buildSettingsPanel(guild, ctx.user.id), { ephemeral: true });
+    return ctx.reply(await buildSettingsPanel(guild, ctx.user.id, undefined, ctx.client), { ephemeral: true });
   },
 });
