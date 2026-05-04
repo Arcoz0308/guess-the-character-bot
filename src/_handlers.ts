@@ -1,5 +1,6 @@
 // AUTO GENERATED FILE AND AUTO UPDATED WITH CLI
 import type { HandlersList } from "arcscord";
+import { adminCommandDef } from "./commands/admin/def";
 import { author_idCommand } from "./commands/author_id_command";
 import { give_pointCommand } from "./commands/give_point_command";
 import { leaderboardCommand } from "./commands/leaderboard_command";
@@ -22,6 +23,7 @@ import { reactionAddEvent } from "./events/reaction_add";
 export default {
   commands: [
     pingCommand,
+    adminCommandDef,
     message_infoCommand,
     author_idCommand,
     sessionCommandDef,
