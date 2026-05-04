@@ -25,6 +25,9 @@ export const reactionAddEvent = createEvent({
     if (!session) {
       return ctx.ok(true);
     }
+    if (message.guild.id !== session.organizerGuildId) {
+      return ctx.ok(true);
+    }
 
     const deliveredMessage = await prisma.deliveredMessage.findUnique({
       where: {
