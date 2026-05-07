@@ -2,6 +2,10 @@ import { createEvent } from "arcscord";
 import { ChannelType } from "discord.js";
 import { resolveOrganizerReactionRelay } from "./reaction_helpers";
 
+function emojiLabel(reaction: { emoji: { identifier: string | null; name: string | null } }) {
+  return reaction.emoji.identifier ?? reaction.emoji.name ?? "unknown";
+}
+
 export const reactionAddEvent = createEvent({
   event: "messageReactionAdd",
   name: "reactionAdd",
@@ -29,7 +33,9 @@ export const reactionAddEvent = createEvent({
       const originalChannel = originalGuild.channels.cache.get(originalMessage.channelId);
       if (originalChannel && originalChannel.type === ChannelType.GuildText) {
         const originalDiscordMessage = await originalChannel.messages.fetch(originalMessage.id);
-        await originalDiscordMessage.react(reaction.emoji);
+        await originalDiscordMessage.react(reaction.emoji).catch((error) => {
+          ctx.client.logger.warning(`Unable to relay reaction ${emojiLabel(reaction)} to original message ${originalMessage.id}: ${error instanceof Error ? error.message : String(error)}`);
+        });
       }
     }
 
@@ -46,7 +52,9 @@ export const reactionAddEvent = createEvent({
       }
 
       const messageToReact = await channel.messages.fetch(targetDeliveredMessage.id);
-      await messageToReact.react(reaction.emoji);
+      await messageToReact.react(reaction.emoji).catch((error) => {
+        ctx.client.logger.warning(`Unable to relay reaction ${emojiLabel(reaction)} to message ${targetDeliveredMessage.id} in guild ${targetDeliveredMessage.guildId}: ${error instanceof Error ? error.message : String(error)}`);
+      });
     }
 
     return ctx.ok(true);

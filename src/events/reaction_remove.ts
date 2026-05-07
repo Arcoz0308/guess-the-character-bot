@@ -2,6 +2,10 @@ import { createEvent } from "arcscord";
 import { ChannelType } from "discord.js";
 import { resolveOrganizerReactionRelay } from "./reaction_helpers";
 
+function formatReactionRemoveError(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export const reactionRemoveEvent = createEvent({
   event: "messageReactionRemove",
   name: "reactionRemove",
@@ -35,7 +39,9 @@ export const reactionRemoveEvent = createEvent({
       if (originalChannel && originalChannel.type === ChannelType.GuildText) {
         const originalDiscordMessage = await originalChannel.messages.fetch(originalMessage.id);
         const originalReaction = originalDiscordMessage.reactions.cache.get(emoji) ?? await originalDiscordMessage.reactions.resolve(emoji)?.fetch();
-        await originalReaction?.users.remove(ctx.client.user?.id).catch(() => undefined);
+        await originalReaction?.users.remove(ctx.client.user?.id).catch((error) => {
+          ctx.client.logger.warning(`Unable to remove relayed reaction ${emoji} from original message ${originalMessage.id}: ${formatReactionRemoveError(error)}`);
+        });
       }
     }
 
@@ -53,7 +59,9 @@ export const reactionRemoveEvent = createEvent({
 
       const messageToUnreact = await channel.messages.fetch(targetDeliveredMessage.id);
       const targetReaction = messageToUnreact.reactions.cache.get(emoji) ?? await messageToUnreact.reactions.resolve(emoji)?.fetch();
-      await targetReaction?.users.remove(ctx.client.user?.id).catch(() => undefined);
+      await targetReaction?.users.remove(ctx.client.user?.id).catch((error) => {
+        ctx.client.logger.warning(`Unable to remove relayed reaction ${emoji} from message ${targetDeliveredMessage.id} in guild ${targetDeliveredMessage.guildId}: ${formatReactionRemoveError(error)}`);
+      });
     }
 
     return ctx.ok(true);
