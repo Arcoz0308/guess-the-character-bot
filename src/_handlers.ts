@@ -19,6 +19,7 @@ import { messageCreateEvent } from "./events/message_create";
 import { messageDeleteEvent } from "./events/message_delete";
 import { messageEditEvent } from "./events/message_edit";
 import { reactionAddEvent } from "./events/reaction_add";
+import { reactionRemoveEvent } from "./events/reaction_remove";
 
 export default {
   commands: [
@@ -43,6 +44,6 @@ export default {
     settingsRoleSelect,
     settingsWebhookModal,
   ],
-  events: [reactionAddEvent, messageCreateEvent, messageEditEvent, messageDeleteEvent],
+  events: [reactionAddEvent, reactionRemoveEvent, messageCreateEvent, messageEditEvent, messageDeleteEvent],
   tasks: [],
 } satisfies HandlersList;

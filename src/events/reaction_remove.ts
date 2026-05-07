@@ -2,9 +2,9 @@ import { createEvent } from "arcscord";
 import { ChannelType } from "discord.js";
 import { resolveOrganizerReactionRelay } from "./reaction_helpers";
 
-export const reactionAddEvent = createEvent({
-  event: "messageReactionAdd",
-  name: "reactionAdd",
+export const reactionRemoveEvent = createEvent({
+  event: "messageReactionRemove",
+  name: "reactionRemove",
   run: async (ctx, reaction, user, _details) => {
     if (user.bot) {
       return ctx.ok(true);
@@ -24,12 +24,18 @@ export const reactionAddEvent = createEvent({
       return ctx.ok(true);
     }
 
+    const emoji = reaction.emoji.identifier;
+    if (!emoji) {
+      return ctx.ok(true);
+    }
+
     if (message.id !== originalMessage.id) {
       const originalGuild = await ctx.client.guilds.fetch(originalMessage.guildId);
       const originalChannel = originalGuild.channels.cache.get(originalMessage.channelId);
       if (originalChannel && originalChannel.type === ChannelType.GuildText) {
         const originalDiscordMessage = await originalChannel.messages.fetch(originalMessage.id);
-        await originalDiscordMessage.react(reaction.emoji);
+        const originalReaction = originalDiscordMessage.reactions.cache.get(emoji) ?? await originalDiscordMessage.reactions.resolve(emoji)?.fetch();
+        await originalReaction?.users.remove(ctx.client.user?.id).catch(() => undefined);
       }
     }
 
@@ -45,8 +51,9 @@ export const reactionAddEvent = createEvent({
         continue;
       }
 
-      const messageToReact = await channel.messages.fetch(targetDeliveredMessage.id);
-      await messageToReact.react(reaction.emoji);
+      const messageToUnreact = await channel.messages.fetch(targetDeliveredMessage.id);
+      const targetReaction = messageToUnreact.reactions.cache.get(emoji) ?? await messageToUnreact.reactions.resolve(emoji)?.fetch();
+      await targetReaction?.users.remove(ctx.client.user?.id).catch(() => undefined);
     }
 
     return ctx.ok(true);
