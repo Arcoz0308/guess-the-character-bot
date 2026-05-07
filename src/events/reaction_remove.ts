@@ -1,6 +1,6 @@
 import { createEvent } from "arcscord";
 import { ChannelType } from "discord.js";
-import { resolveOrganizerReactionRelay } from "./reaction_helpers";
+import { fetchReactionFromMessage, reactionEmojiKey, resolveOrganizerReactionRelay } from "./reaction_helpers";
 
 function formatReactionRemoveError(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -28,8 +28,13 @@ export const reactionRemoveEvent = createEvent({
       return ctx.ok(true);
     }
 
-    const emoji = reaction.emoji.identifier;
+    const emoji = reactionEmojiKey(reaction);
     if (!emoji) {
+      return ctx.ok(true);
+    }
+    const botUserId = ctx.client.user?.id;
+    if (!botUserId) {
+      ctx.client.logger.warning(`Unable to remove relayed reaction ${emoji}: bot user is not ready.`);
       return ctx.ok(true);
     }
 
@@ -38,8 +43,11 @@ export const reactionRemoveEvent = createEvent({
       const originalChannel = originalGuild.channels.cache.get(originalMessage.channelId);
       if (originalChannel && originalChannel.type === ChannelType.GuildText) {
         const originalDiscordMessage = await originalChannel.messages.fetch(originalMessage.id);
-        const originalReaction = originalDiscordMessage.reactions.cache.get(emoji) ?? await originalDiscordMessage.reactions.resolve(emoji)?.fetch();
-        await originalReaction?.users.remove(ctx.client.user?.id).catch((error) => {
+        const originalReaction = await fetchReactionFromMessage(originalDiscordMessage, reaction);
+        if (!originalReaction) {
+          ctx.client.logger.warning(`Unable to remove relayed reaction ${emoji} from original message ${originalMessage.id}: reaction is not present.`);
+        }
+        await originalReaction?.users.remove(botUserId).catch((error) => {
           ctx.client.logger.warning(`Unable to remove relayed reaction ${emoji} from original message ${originalMessage.id}: ${formatReactionRemoveError(error)}`);
         });
       }
@@ -58,8 +66,11 @@ export const reactionRemoveEvent = createEvent({
       }
 
       const messageToUnreact = await channel.messages.fetch(targetDeliveredMessage.id);
-      const targetReaction = messageToUnreact.reactions.cache.get(emoji) ?? await messageToUnreact.reactions.resolve(emoji)?.fetch();
-      await targetReaction?.users.remove(ctx.client.user?.id).catch((error) => {
+      const targetReaction = await fetchReactionFromMessage(messageToUnreact, reaction);
+      if (!targetReaction) {
+        ctx.client.logger.warning(`Unable to remove relayed reaction ${emoji} from message ${targetDeliveredMessage.id} in guild ${targetDeliveredMessage.guildId}: reaction is not present.`);
+      }
+      await targetReaction?.users.remove(botUserId).catch((error) => {
         ctx.client.logger.warning(`Unable to remove relayed reaction ${emoji} from message ${targetDeliveredMessage.id} in guild ${targetDeliveredMessage.guildId}: ${formatReactionRemoveError(error)}`);
       });
     }
