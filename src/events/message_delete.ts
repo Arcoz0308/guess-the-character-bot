@@ -8,11 +8,11 @@ import { canSendManagedSessionMessage, upsertDiscordUser } from "../utils/gtc_he
 const auditLogWindowMs = 10_000;
 
 async function findMessageDeleteExecutorId(params: {
-  authorId: string;
   channelId: string;
   deletedAt: number;
   guild: Guild;
   logWarning: (message: string) => void;
+  targetIds: string[];
 }) {
   try {
     const auditLogs = await params.guild.fetchAuditLogs({
@@ -24,7 +24,7 @@ async function findMessageDeleteExecutorId(params: {
       if (!auditEntry.executorId) {
         return false;
       }
-      if (auditEntry.targetId !== params.authorId) {
+      if (params.targetIds.length > 0 && (!auditEntry.targetId || !params.targetIds.includes(auditEntry.targetId))) {
         return false;
       }
       if (Math.abs(params.deletedAt - auditEntry.createdTimestamp) > auditLogWindowMs) {
@@ -42,6 +42,10 @@ async function findMessageDeleteExecutorId(params: {
   }
 }
 
+function uniqueValues(values: Array<string | null | undefined>) {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))];
+}
+
 export const messageDeleteEvent = createEvent({
   event: "messageDelete",
   name: "message_delete",
@@ -50,7 +54,7 @@ export const messageDeleteEvent = createEvent({
       return ctx.ok(true);
     }
 
-    const originalMessage = await prisma.originalMessage.findUnique({
+    const directOriginalMessage = await prisma.originalMessage.findUnique({
       where: {
         id: message.id,
       },
@@ -61,13 +65,25 @@ export const messageDeleteEvent = createEvent({
       },
     });
 
+    const deliveredMessage = directOriginalMessage
+      ? null
+      : await prisma.deliveredMessage.findUnique({
+        where: {
+          id: message.id,
+        },
+        include: {
+          originalMessage: {
+            include: {
+              deliveredMessages: true,
+              session: true,
+              sourceGuild: true,
+            },
+          },
+        },
+      });
+    const originalMessage = directOriginalMessage ?? deliveredMessage?.originalMessage;
+
     if (!originalMessage?.session) {
-      return ctx.ok(true);
-    }
-    if (originalMessage.guildId !== originalMessage.session.organizerGuildId) {
-      return ctx.ok(true);
-    }
-    if (message.guild.id !== originalMessage.session.organizerGuildId) {
       return ctx.ok(true);
     }
     if (!originalMessage.sourceGuild.allowOrganizerDeletion) {
@@ -80,13 +96,15 @@ export const messageDeleteEvent = createEvent({
 
     const deletedAt = Date.now();
     const auditExecutorId = await findMessageDeleteExecutorId({
-      authorId: originalMessage.authorId,
-      channelId: originalMessage.channelId,
+      channelId: message.channelId,
       deletedAt,
       guild: message.guild,
       logWarning: message => ctx.client.logger.warning(message),
+      targetIds: directOriginalMessage
+        ? uniqueValues([originalMessage.authorId, message.author?.id])
+        : uniqueValues([message.author?.id, ctx.client.user?.id]),
     });
-    const fallbackAuthorCanManage = await canSendManagedSessionMessage(originalMessage.sessionId, originalMessage.authorId);
+    const fallbackAuthorCanManage = directOriginalMessage ? await canSendManagedSessionMessage(originalMessage.sessionId, originalMessage.authorId) : false;
     const executorId = auditExecutorId ?? (fallbackAuthorCanManage ? originalMessage.authorId : null);
 
     if (!executorId) {
@@ -103,8 +121,39 @@ export const messageDeleteEvent = createEvent({
 
     let deletedDeliveredCount = 0;
     let failedDeliveredCount = 0;
+    let deletedOriginal = directOriginalMessage !== null;
+
+    if (!directOriginalMessage) {
+      try {
+        const guild = await ctx.client.guilds.fetch(originalMessage.guildId);
+        const channel = await guild.channels.fetch(originalMessage.channelId);
+        if (!channel || channel.type !== ChannelType.GuildText) {
+          failedDeliveredCount++;
+        }
+        else {
+          await channel.messages.delete(originalMessage.id);
+          deletedOriginal = true;
+        }
+      }
+      catch (error) {
+        ctx.client.logger.warning(`Failed to delete original message ${originalMessage.id} in guild ${originalMessage.guildId}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
 
     for (const deliveredMessage of originalMessage.deliveredMessages) {
+      if (deliveredMessage.id === message.id) {
+        deletedDeliveredCount++;
+        await prisma.deliveredMessage.update({
+          where: {
+            id: deliveredMessage.id,
+          },
+          data: {
+            deletedAt: new Date(deletedAt),
+          },
+        });
+        continue;
+      }
+
       try {
         const guild = await ctx.client.guilds.fetch(deliveredMessage.guildId);
         const channel = await guild.channels.fetch(deliveredMessage.channelId);
@@ -145,14 +194,15 @@ export const messageDeleteEvent = createEvent({
         requestedFromGuildId: message.guild.id,
         requestedById: executorId,
         originalMessageId: originalMessage.id,
-        deletedOriginal: true,
+        deliveredMessageId: deliveredMessage?.id,
+        deletedOriginal,
         deletedDeliveredCount,
         failedDeliveredCount,
-        reason: "Suppression depuis le serveur organisateur",
+        reason: "Suppression demandée par un organisateur GTC",
       },
     });
 
-    ctx.client.logger.info(`Propagated organizer deletion for message ${originalMessage.id}: ${deletedDeliveredCount} relayed deleted, ${failedDeliveredCount} failed.`);
+    ctx.client.logger.info(`Propagated organizer deletion for message ${originalMessage.id}: original deleted=${deletedOriginal}, ${deletedDeliveredCount} relayed deleted, ${failedDeliveredCount} failed.`);
 
     return ctx.ok(true);
   },
