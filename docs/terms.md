@@ -49,7 +49,7 @@ Le service peut être interrompu temporairement pour maintenance, mise à jour, 
 
 L'utilisation des données par Guess The Character est décrite dans la Politique de confidentialité:
 
-Privacy Policy: [`/privacy`](privacy)
+Privacy Policy: [`/privacy`](../privacy/)
 
 La politique de confidentialité est disponible sur la page `/privacy`.
 
@@ -111,7 +111,7 @@ The service may be temporarily interrupted for maintenance, updates, technical i
 
 How Guess The Character handles data is described in the Privacy Policy:
 
-Privacy Policy: [`/privacy`](privacy)
+Privacy Policy: [`/privacy`](../privacy/)
 
 The Privacy Policy is available on the `/privacy` page.
 
