@@ -45,9 +45,7 @@ Le service peut être interrompu temporairement pour maintenance, mise à jour, 
 
 L'utilisation des données par Guess The Character est décrite dans la Politique de confidentialité:
 
-Privacy Policy: `https://YOUR_GITHUB_PAGES_URL/privacy`
-
-Cette URL doit être remplacée par l'URL publique finale après publication.
+Privacy Policy: `https://arcoz0308.github.io/guess-the-character-bot/privacy`
 
 ### 6. Suspension ou retrait d'accès
 
@@ -107,9 +105,7 @@ The service may be temporarily interrupted for maintenance, updates, technical i
 
 How Guess The Character handles data is described in the Privacy Policy:
 
-Privacy Policy: `https://YOUR_GITHUB_PAGES_URL/privacy`
-
-This URL should be replaced with the final public URL after publication.
+Privacy Policy: `https://arcoz0308.github.io/guess-the-character-bot/privacy`
 
 ### 6. Suspension or removal of access
 
