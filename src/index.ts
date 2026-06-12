@@ -14,7 +14,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const client = new ArcClient(process.env.TOKEN ?? "", {
-  intents: ["MessageContent", "GuildMessages", "Guilds", "GuildMessageReactions", "GuildMembers", "DirectMessageReactions"],
+  intents: ["MessageContent", "GuildMessages", "Guilds", "GuildMessageReactions", "DirectMessageReactions"],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
