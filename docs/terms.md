@@ -1,3 +1,7 @@
+---
+permalink: /terms/
+---
+
 # Terms of Service / Conditions d'utilisation
 
 Last updated: June 11, 2026
@@ -45,7 +49,9 @@ Le service peut être interrompu temporairement pour maintenance, mise à jour, 
 
 L'utilisation des données par Guess The Character est décrite dans la Politique de confidentialité:
 
-Privacy Policy: https://arcoz0308.github.io/guess-the-character-bot/privacy
+Privacy Policy: [`/privacy`](privacy)
+
+La politique de confidentialité est disponible sur la page `/privacy`.
 
 ### 6. Suspension ou retrait d'accès
 
@@ -105,7 +111,9 @@ The service may be temporarily interrupted for maintenance, updates, technical i
 
 How Guess The Character handles data is described in the Privacy Policy:
 
-Privacy Policy: https://arcoz0308.github.io/guess-the-character-bot/privacy
+Privacy Policy: [`/privacy`](privacy)
+
+The Privacy Policy is available on the `/privacy` page.
 
 ### 6. Suspension or removal of access
 
